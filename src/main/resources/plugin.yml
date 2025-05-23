@@ -1,0 +1,8 @@
+name: HeavenRPG
+version: '${project.version}'
+main: com.github.rfsmassacre.heavenrpg.HeavenRPG
+api-version: '1.21'
+author: "RFSMassacre"
+commands:
+  heavenrpg:
+    usage: "/heavenrpg"

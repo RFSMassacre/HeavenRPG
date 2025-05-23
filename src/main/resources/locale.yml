@@ -1,0 +1,9 @@
+admin:
+  item:
+    invalid: "&f{item} &cis an invalid item!"
+    success:
+      target: "&aYou have spawn &ex{amount} {item}&a."
+      sender: "&aYou have given &e{amount} {item}&a to &f{player}&a."
+
+invalid:
+  player: "&f{player}&c could not be found!"
