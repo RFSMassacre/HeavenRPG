@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 @Getter
 @Setter
 @SuppressWarnings("deprecation")
-public class Origin
+public final class Origin
 {
     public enum KeyBind
     {
@@ -69,11 +69,6 @@ public class Origin
         DATA = new OriginGson();
     }
 
-    public static <T extends Origin> void registerRace(Class<T> clazz)
-    {
-        DATA.registerType(clazz);
-    }
-
     public static void addOrigin(Origin origin)
     {
         CACHE.put(origin.playerId, origin);
@@ -84,12 +79,14 @@ public class Origin
         return CACHE.get(playerId);
     }
 
-    public static <T extends Origin> T getOrigin(UUID playerId, Class<T> clazz)
+    public static Origin getOrigin(String playerName)
     {
-        Origin origin = getOrigin(playerId);
-        if (clazz.isInstance(origin))
+        for (Origin origin : CACHE.values())
         {
-            return clazz.cast(origin);
+            if (origin.getName().equals(playerName))
+            {
+                return origin;
+            }
         }
 
         return null;
@@ -117,17 +114,6 @@ public class Origin
         return DATA.read(playerId.toString());
     }
 
-    public static <T extends Origin> T loadOrigin(UUID playerId, Class<T> clazz)
-    {
-        Origin origin = loadOrigin(playerId);
-        if (clazz.isInstance(origin))
-        {
-            return clazz.cast(origin);
-        }
-
-        return null;
-    }
-
     public static void getOrLoadOrigin(UUID playerId, Consumer<Origin> callback)
     {
         Origin origin = getOrigin(playerId);
@@ -144,32 +130,39 @@ public class Origin
         });
     }
 
-    public static <T extends Origin> void getOrLoadOrigin(UUID playerId, Class<T> clazz, Consumer<T> callback)
+    public static void getOrLoadOrigin(String playerName, Consumer<Origin> callback)
     {
-        getOrLoadOrigin(playerId, (origin) ->
+        Origin online = getOrigin(playerName);
+        if (online != null)
         {
-            if (clazz.isInstance(origin))
+            callback.accept(online);
+            return;
+        }
+
+        TaskUtil.runTaskAsync(() ->
+        {
+            for (Origin offline : DATA.all())
             {
-                callback.accept(clazz.cast(origin));
-            }
-            else
-            {
-                callback.accept(null);
+                if (offline.getPlayer() == null && offline.getName().equals(playerName))
+                {
+                    callback.accept(offline);
+                    return;
+                }
             }
         });
     }
 
-    protected UUID playerId;
-    protected String originRace;
-    protected String originClass;
-    protected String displayName;
-    protected String name;
-    protected double lastHealth;
-    protected double lastMaxHealth;
-    protected long lastLogin;
-    protected Map<String, Double> raceLevels;
-    protected Map<String, Double> classLevels;
-    protected Map<KeyBind, String> spells;
+    private UUID playerId;
+    private String originRace;
+    private String originClass;
+    private String displayName;
+    private String name;
+    private double lastHealth;
+    private double lastMaxHealth;
+    private long lastLogin;
+    private Map<String, Double> raceLevels;
+    private Map<String, Double> classLevels;
+    private Map<KeyBind, String> spells;
 
     public Origin()
     {
@@ -187,21 +180,6 @@ public class Origin
         this.playerId = player.getUniqueId();
         setDisplayName(player.getDisplayName());
         this.name = player.getName();
-    }
-
-    public Origin(Origin origin)
-    {
-        this.playerId = origin.playerId;
-        this.originRace = origin.originRace;
-        this.originClass = origin.originClass;
-        this.displayName = origin.displayName;
-        this.name = origin.name;
-        this.lastHealth = origin.lastHealth;
-        this.lastMaxHealth = origin.lastMaxHealth;
-        this.lastLogin = origin.lastLogin;
-        this.raceLevels = origin.raceLevels;
-        this.classLevels = origin.classLevels;
-        this.spells = origin.spells;
     }
 
     public Player getPlayer()
@@ -274,6 +252,28 @@ public class Origin
         return offlineHours > hours;
     }
 
+    public double getRaceLevel()
+    {
+        OriginRace originRace = getOriginRace();
+        if (originRace == null)
+        {
+            return 0.0;
+        }
+
+        return getRaceLevel(originRace.getClass());
+    }
+
+    public double getRaceLevel(Class<? extends OriginRace> raceClass)
+    {
+        OriginRace originRace = OriginRace.getRace(raceClass);
+        if (originRace == null)
+        {
+            return 0.0;
+        }
+
+        return raceLevels.getOrDefault(originRace.getName(), 0.0);
+    }
+
     public void addRaceLevel(double level)
     {
         addRaceLevel(level, getOriginRace().getClass());
@@ -284,8 +284,30 @@ public class Origin
         OriginRace originRace = OriginRace.getRace(clazz);
         if (originRace != null)
         {
-            raceLevels.put(originRace.getName(), getLevel() + level);
+            raceLevels.put(originRace.getName(), this.getRaceLevel() + level);
         }
+    }
+
+    public double getClassLevel()
+    {
+        OriginClass originClass = getOriginClass();
+        if (originClass == null)
+        {
+            return 0.0;
+        }
+
+        return getClassLevel(getOriginClass().getClass());
+    }
+
+    public double getClassLevel(Class<? extends OriginClass> clazz)
+    {
+        OriginClass originClass = OriginClass.getClass(clazz);
+        if (originClass == null)
+        {
+            return 0.0;
+        }
+
+        return classLevels.getOrDefault(originClass.getName(), 0.0);
     }
 
     public void addClassLevel(double level)
@@ -298,29 +320,31 @@ public class Origin
         OriginClass originClass = OriginClass.getClass(clazz);
         if (originClass != null)
         {
-            raceLevels.put(originClass.getName(), getLevel() + level);
+            raceLevels.put(originClass.getName(), this.getRaceLevel() + level);
         }
     }
 
-    public double getLevel()
+    public void setOriginRace(Class<? extends OriginRace> clazz)
     {
-        return getLevel(getOriginRace().getClass());
-    }
-
-    public double getLevel(Class<? extends OriginRace> raceClass)
-    {
-        OriginRace race = OriginRace.getRace(raceClass);
-        if (race == null)
+        OriginRace originRace = OriginRace.getRace(clazz);
+        if (originRace != null)
         {
-            return 0.0;
+            this.originRace = originRace.getName();
         }
-
-        return raceLevels.getOrDefault(race.getName(), 0.0);
     }
 
     public OriginRace getOriginRace()
     {
         return OriginRace.getRace(originRace);
+    }
+
+    public void setOriginClass(Class<? extends OriginClass> clazz)
+    {
+        OriginClass originClass = OriginClass.getClass(clazz);
+        if (originClass != null)
+        {
+            this.originClass = originClass.getName();
+        }
     }
 
     public OriginClass getOriginClass()

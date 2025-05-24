@@ -60,6 +60,11 @@ public abstract class OriginClass
         return null;
     }
 
+    public static Set<OriginClass> getClasses()
+    {
+        return new HashSet<>(CACHE.values());
+    }
+
     private final String name;
     private final Set<String> spells;
     private String displayName;
@@ -151,7 +156,7 @@ public abstract class OriginClass
             {
                 AttributeModifier.Operation operation = AttributeModifier.Operation.valueOf(section.getString(key +
                         ".operation"));
-                double amount = section.getDouble(key + ".amount") * origin.getLevel();
+                double amount = section.getDouble(key + ".amount") * origin.getRaceLevel();
                 NamespacedKey namespacedKey = new NamespacedKey(CLASS_KEY, name.toLowerCase() + "." +
                         key);
                 Attribute attribute = Registry.ATTRIBUTE.getOrThrow(Key.key("minecraft", key.toLowerCase()));

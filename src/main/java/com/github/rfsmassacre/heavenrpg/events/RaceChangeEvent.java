@@ -3,6 +3,7 @@ package com.github.rfsmassacre.heavenrpg.events;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
 import com.github.rfsmassacre.heavenrpg.races.OriginRace;
 import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -25,15 +26,20 @@ public class RaceChangeEvent extends Event implements Cancellable
 
     @Getter
     private final Origin origin;
-    @Getter
-    private final OriginRace originRace;
+    @Setter
+    private Class<? extends OriginRace> originRace;
     private boolean cancel;
 
-    public RaceChangeEvent(Origin origin, OriginRace originRace)
+    public RaceChangeEvent(Origin origin, Class<? extends OriginRace> originRace)
     {
         this.origin = origin;
         this.originRace = originRace;
         this.cancel = false;
+    }
+
+    public OriginRace getOriginRace()
+    {
+        return OriginRace.getRace(originRace);
     }
 
     @Override

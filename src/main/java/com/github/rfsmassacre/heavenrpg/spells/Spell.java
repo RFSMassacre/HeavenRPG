@@ -211,7 +211,7 @@ public abstract class Spell implements Listener
             return false;
         }
 
-        if (origin.getLevel() < level)
+        if (origin.getRaceLevel() < level)
         {
             locale.sendActionMessage(origin.getPlayer(), levelMessage);
             return false;

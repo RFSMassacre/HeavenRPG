@@ -4,6 +4,7 @@ import com.github.rfsmassacre.heavenlibrary.paper.HeavenPaperPlugin;
 import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperConfiguration;
 import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperLocale;
 import com.github.rfsmassacre.heavenrpg.classes.OriginClass;
+import com.github.rfsmassacre.heavenrpg.commands.KeybindCommand;
 import com.github.rfsmassacre.heavenrpg.commands.MainCommand;
 import com.github.rfsmassacre.heavenrpg.listeners.KeyBindListener;
 import com.github.rfsmassacre.heavenrpg.listeners.OriginListener;
@@ -54,6 +55,7 @@ public final class HeavenRPG extends HeavenPaperPlugin
         plugins.registerEvents(new OriginListener(), this);
         plugins.registerEvents(new KeyBindListener(), this);
         getCommand("heavenrpg").setExecutor(new MainCommand());
+        getCommand("keybind").setExecutor(new KeybindCommand());
     }
 
     @Override

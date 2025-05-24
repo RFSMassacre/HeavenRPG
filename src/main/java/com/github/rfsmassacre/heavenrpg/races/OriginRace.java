@@ -74,6 +74,11 @@ public abstract class OriginRace
         return null;
     }
 
+    public static Set<OriginRace> getRaces()
+    {
+        return new HashSet<>(CACHE.values());
+    }
+
     private final String name;
     private final Map<Integer, Class<? extends Spell>> spells;
     private String displayName;

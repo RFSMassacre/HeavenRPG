@@ -6,3 +6,5 @@ author: "RFSMassacre"
 commands:
   heavenrpg:
     usage: "/heavenrpg"
+  keybind:
+    usage: "/keybind"

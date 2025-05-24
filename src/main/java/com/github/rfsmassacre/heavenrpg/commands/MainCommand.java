@@ -4,6 +4,8 @@ import com.github.rfsmassacre.heavenlibrary.paper.commands.PaperCommand;
 import com.github.rfsmassacre.heavenlibrary.paper.items.HeavenItem;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
 import com.github.rfsmassacre.heavenrpg.classes.OriginClass;
+import com.github.rfsmassacre.heavenrpg.events.ClassChangeEvent;
+import com.github.rfsmassacre.heavenrpg.events.RaceChangeEvent;
 import com.github.rfsmassacre.heavenrpg.items.HeavenRPGItem;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
 import com.github.rfsmassacre.heavenrpg.races.OriginRace;
@@ -133,5 +135,263 @@ public class MainCommand extends PaperCommand
         }
 
         return suggestions;
+    }
+
+    private class RaceCommand extends PaperSubCommand
+    {
+        public RaceCommand()
+        {
+            super("race");
+        }
+
+        @Override
+        protected void onRun(CommandSender sender, String[] args)
+        {
+            //race change
+            if (args.length < 2)
+            {
+                onInvalidArgs(sender, "<race>", "[player]");
+            }
+            //race change <race>
+            else if (args.length == 2)
+            {
+                if (!(sender instanceof Player player))
+                {
+                    locale.sendLocale(sender, true, "invalid.console");
+                    return;
+                }
+
+                Origin origin = Origin.getOrigin(player.getUniqueId());
+                if (origin == null)
+                {
+                    playSound(player, SoundKey.INCOMPLETE);
+                    return;
+                }
+
+                String raceName = args[1];
+                OriginRace race = OriginRace.getRace(raceName);
+                if (race == null)
+                {
+                    locale.sendLocale(sender, "invalid.race", "{arg}", raceName);
+                    playSound(player, SoundKey.INCOMPLETE);
+                    return;
+                }
+
+                change(sender, origin, race.getClass());
+            }
+            else
+            {
+                String raceName = args[1];
+                OriginRace race = OriginRace.getRace(raceName);
+                if (race == null)
+                {
+                    locale.sendLocale(sender, "invalid.race", "{arg}", raceName);
+                    playSound(sender, SoundKey.INCOMPLETE);
+                    return;
+                }
+
+                String playerName = args[2];
+                Origin.getOrLoadOrigin(playerName, (origin) ->
+                {
+                    if (origin == null)
+                    {
+                        locale.sendLocale(sender, true, "invalid.no-player", "{name}",
+                                playerName);
+                        playSound(sender, SoundKey.INCOMPLETE);
+                        return;
+                    }
+
+                    change(sender, origin, race.getClass());
+                });
+            }
+        }
+
+        private void change(CommandSender sender, Origin origin, Class<? extends OriginRace> clazz)
+        {
+            if (clazz == null || OriginRace.getRace(clazz) == null)
+            {
+                locale.sendLocale(sender, true, "admin.race.failed");
+                return;
+            }
+
+           TaskUtil.runTaskAsync(() ->
+           {
+                try
+                {
+                    TaskUtil.runTask(() ->
+                    {
+                        RaceChangeEvent event = new RaceChangeEvent(origin, clazz);
+                        if (!event.callEvent())
+                        {
+                            locale.sendLocale(sender, "admin.race.failed");
+                            playSound(sender, SoundKey.INCOMPLETE);
+                            return;
+                        }
+
+                        locale.sendLocale(origin.getPlayer(), true, "admin.race.other",
+                                "{player}", origin.getDisplayName(), "{race}",
+                                origin.getOriginRace().getDisplayName());
+                        if (!sender.equals(origin.getPlayer()))
+                        {
+                            locale.sendLocale(sender, true, "admin.race.other", "{player}",
+                                    origin.getDisplayName(), "{race}", origin.getOriginRace().getDisplayName());
+                        }
+                    });
+                }
+                catch (IllegalArgumentException exception)
+                {
+                    playSound(sender, SoundKey.INCOMPLETE);
+                }
+            });
+        }
+
+        @Override
+        public List<String> onTabComplete(CommandSender sender, String[] args)
+        {
+            List<String> suggestions = new ArrayList<>();
+            if (args.length == 2)
+            {
+                suggestions.addAll(OriginRace.getRaces().stream()
+                        .map(OriginRace::getName)
+                        .toList());
+            }
+            else if (args.length == 3)
+            {
+                suggestions.addAll(Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .toList());
+            }
+
+            return suggestions;
+        }
+    }
+
+    private class RaceCommand extends PaperSubCommand
+    {
+        public RaceCommand()
+        {
+            super("race");
+        }
+
+        @Override
+        protected void onRun(CommandSender sender, String[] args)
+        {
+            //race change
+            if (args.length < 2)
+            {
+                onInvalidArgs(sender, "<race>", "[player]");
+            }
+            //race change <race>
+            else if (args.length == 2)
+            {
+                if (!(sender instanceof Player player))
+                {
+                    locale.sendLocale(sender, true, "invalid.console");
+                    return;
+                }
+
+                Origin origin = Origin.getOrigin(player.getUniqueId());
+                if (origin == null)
+                {
+                    playSound(player, SoundKey.INCOMPLETE);
+                    return;
+                }
+
+                String raceName = args[1];
+                OriginRace race = OriginRace.getRace(raceName);
+                if (race == null)
+                {
+                    locale.sendLocale(sender, "invalid.race", "{arg}", raceName);
+                    playSound(player, SoundKey.INCOMPLETE);
+                    return;
+                }
+
+                change(sender, origin, race.getClass());
+            }
+            else
+            {
+                String raceName = args[1];
+                OriginRace race = OriginRace.getRace(raceName);
+                if (race == null)
+                {
+                    locale.sendLocale(sender, "invalid.race", "{arg}", raceName);
+                    playSound(sender, SoundKey.INCOMPLETE);
+                    return;
+                }
+
+                String playerName = args[2];
+                Origin.getOrLoadOrigin(playerName, (origin) ->
+                {
+                    if (origin == null)
+                    {
+                        locale.sendLocale(sender, true, "invalid.no-player", "{name}",
+                                playerName);
+                        playSound(sender, SoundKey.INCOMPLETE);
+                        return;
+                    }
+
+                    change(sender, origin, race.getClass());
+                });
+            }
+        }
+
+        private void change(CommandSender sender, Origin origin, Class<? extends OriginClass> clazz)
+        {
+            if (clazz == null || OriginClass.getClass(clazz) == null)
+            {
+                locale.sendLocale(sender, true, "admin.race.failed");
+                return;
+            }
+
+            TaskUtil.runTaskAsync(() ->
+            {
+                try
+                {
+                    TaskUtil.runTask(() ->
+                    {
+                        ClassChangeEvent event = new ClassChangeEvent(origin, clazz);
+                        if (!event.callEvent())
+                        {
+                            locale.sendLocale(sender, "admin.race.failed");
+                            playSound(sender, SoundKey.INCOMPLETE);
+                            return;
+                        }
+
+                        locale.sendLocale(origin.getPlayer(), true, "admin.race.other",
+                                "{player}", origin.getDisplayName(), "{race}",
+                                origin.getOriginRace().getDisplayName());
+                        if (!sender.equals(origin.getPlayer()))
+                        {
+                            locale.sendLocale(sender, true, "admin.race.other", "{player}",
+                                    origin.getDisplayName(), "{race}", origin.getOriginRace().getDisplayName());
+                        }
+                    });
+                }
+                catch (IllegalArgumentException exception)
+                {
+                    playSound(sender, SoundKey.INCOMPLETE);
+                }
+            });
+        }
+
+        @Override
+        public List<String> onTabComplete(CommandSender sender, String[] args)
+        {
+            List<String> suggestions = new ArrayList<>();
+            if (args.length == 2)
+            {
+                suggestions.addAll(OriginClass.getClasses().stream()
+                        .map(OriginClass::getName)
+                        .toList());
+            }
+            else if (args.length == 3)
+            {
+                suggestions.addAll(Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .toList());
+            }
+
+            return suggestions;
+        }
     }
 }

@@ -37,9 +37,9 @@ public abstract class HeavenRPGItem extends HeavenItem
     {
         for (HeavenRPGItem item : CACHE.values())
         {
-            if (clazz.isInstance(clazz))
+            if (clazz.isInstance(item))
             {
-                return clazz.cast(clazz);
+                return clazz.cast(item);
             }
         }
 
