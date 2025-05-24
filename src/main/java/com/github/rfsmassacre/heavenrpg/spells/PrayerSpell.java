@@ -19,11 +19,11 @@ public class PrayerSpell extends Spell
     {
         super("Prayer");
 
-        this.noBlessingsFound = getString("no-blessings-message", "&f{target} &chas every blessing!");
+        this.noBlessingsFound = getString("no-blessings-message", "&f{target}&c has every blessing!");
         this.blessingReceived = getString("blessing-received",
-                "&f{sender} &ehas blessed you with &b{potion} {amplify}&e!");
+                "&f{sender}&e has blessed you with &b{potion} {amplify}&e!");
         this.blessingSent = getString("blessing-received",
-                "&7You blessed &f{sender} &7with &b{potion} {amplify}&7!");
+                "&7You blessed &f{sender}&7 with &b{potion} {amplify}&7!");
         this.durationMin = getInt("duration.min", 3000);
         this.durationMax = getInt("duration.max", 6000);
         this.amplifyMin = getInt("amplify.min", 0);

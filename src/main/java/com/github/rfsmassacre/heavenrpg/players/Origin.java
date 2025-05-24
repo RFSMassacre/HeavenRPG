@@ -190,6 +190,7 @@ public final class Origin
     public void setPlayer(Player player)
     {
         this.playerId = player.getUniqueId();
+        this.name = player.getName();
         setDisplayName(player.getDisplayName());
     }
 

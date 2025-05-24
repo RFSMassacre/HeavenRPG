@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class KeyBindListener implements Listener
+public class KeybindListener implements Listener
 {
     private static final long THRESHOLD = 400L;
     private static final Map<Origin.KeyBind, Map<UUID, Long>> LAST_CLICKED = new HashMap<>();
@@ -53,7 +53,7 @@ public class KeyBindListener implements Listener
     public void onDrop(PlayerDropItemEvent event)
     {
         Player player = event.getPlayer();
-        Origin origin = Origin.getOrigin(player.getUniqueId(), Origin.class);
+        Origin origin = Origin.getOrigin(player.getUniqueId());
         if (origin == null)
         {
             return;

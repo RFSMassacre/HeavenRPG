@@ -65,15 +65,21 @@ public abstract class OriginClass
         return new HashSet<>(CACHE.values());
     }
 
-    private final String name;
     private final Set<String> spells;
+    private String name;
     private String displayName;
     private String castItem;
 
+    public OriginClass()
+    {
+        this.spells = new HashSet<>();
+    }
+
     public OriginClass(String name)
     {
+        this();
+
         this.name = name;
-        this.spells = new HashSet<>();
         this.displayName = name;
     }
 
@@ -88,14 +94,11 @@ public abstract class OriginClass
     {
         this(name, displayName);
 
-        try
+        //Make sure to register your cast item!
+        CastItem castItem = HeavenRPGItem.getItem(clazz);
+        if (castItem != null)
         {
-            //Make sure to register your cast item!
-            this.castItem = HeavenRPGItem.getItem(clazz).getName();
-        }
-        catch (NullPointerException exception)
-        {
-            //Do nothing
+            this.castItem = castItem.getName();
         }
     }
 

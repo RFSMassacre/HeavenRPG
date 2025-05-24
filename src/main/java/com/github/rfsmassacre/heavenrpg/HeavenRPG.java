@@ -6,7 +6,7 @@ import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperLocale;
 import com.github.rfsmassacre.heavenrpg.classes.OriginClass;
 import com.github.rfsmassacre.heavenrpg.commands.KeybindCommand;
 import com.github.rfsmassacre.heavenrpg.commands.MainCommand;
-import com.github.rfsmassacre.heavenrpg.listeners.KeyBindListener;
+import com.github.rfsmassacre.heavenrpg.listeners.KeybindListener;
 import com.github.rfsmassacre.heavenrpg.listeners.OriginListener;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
 import com.github.rfsmassacre.heavenrpg.races.OriginRace;
@@ -53,7 +53,7 @@ public final class HeavenRPG extends HeavenPaperPlugin
         Spell.loadSpells();
         PluginManager plugins = getServer().getPluginManager();
         plugins.registerEvents(new OriginListener(), this);
-        plugins.registerEvents(new KeyBindListener(), this);
+        plugins.registerEvents(new KeybindListener(), this);
         getCommand("heavenrpg").setExecutor(new MainCommand());
         getCommand("keybind").setExecutor(new KeybindCommand());
     }
