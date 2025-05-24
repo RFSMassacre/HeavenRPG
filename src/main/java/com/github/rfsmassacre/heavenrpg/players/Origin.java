@@ -171,6 +171,8 @@ public final class Origin
         this.lastMaxHealth = 0.0;
         this.lastLogin = 0L;
         this.raceLevels = new HashMap<>();
+        this.classLevels = new HashMap<>();
+        this.spells = new HashMap<>();
     }
 
     public Origin(Player player)

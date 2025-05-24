@@ -6,6 +6,7 @@ import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperLocale;
 import com.github.rfsmassacre.heavenrpg.classes.OriginClass;
 import com.github.rfsmassacre.heavenrpg.commands.KeybindCommand;
 import com.github.rfsmassacre.heavenrpg.commands.MainCommand;
+import com.github.rfsmassacre.heavenrpg.items.HeavenRPGItem;
 import com.github.rfsmassacre.heavenrpg.listeners.KeybindListener;
 import com.github.rfsmassacre.heavenrpg.listeners.OriginListener;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
@@ -41,16 +42,17 @@ public final class HeavenRPG extends HeavenPaperPlugin
     {
         instance = this;
         getDataFolder().mkdir();
-        addYamlManager(new PaperConfiguration(this, "", "config.yml"));
-        addYamlManager(new PaperLocale(this, "", "locale.yml"));
+        addYamlManager(new PaperConfiguration(this, "", "config.yml", true));
+        addYamlManager(new PaperLocale(this, "", "locale.yml", true));
         addYamlManager(new PaperConfiguration(this, "", "spells.yml"));
         addYamlManager(new PaperConfiguration(this, "", "classes.yml"));
         addYamlManager(new PaperConfiguration(this, "", "items.yml"));
+        HeavenRPGItem.initialize();
+        Spell.initialize();
         OriginRace.initialize();
         OriginClass.initialize();
         Origin.initialize();
         TaskUtil.initialize();
-        Spell.loadSpells();
         PluginManager plugins = getServer().getPluginManager();
         plugins.registerEvents(new OriginListener(), this);
         plugins.registerEvents(new KeybindListener(), this);

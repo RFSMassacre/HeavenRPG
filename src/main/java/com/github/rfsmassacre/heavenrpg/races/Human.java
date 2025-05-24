@@ -6,7 +6,7 @@ public final class Human extends OriginRace
 {
     Human()
     {
-        super("Human");
+        super("Human", "&fHuman");
     }
 
     @Override

@@ -1,7 +1,6 @@
 package com.github.rfsmassacre.heavenrpg.commands;
 
 import com.github.rfsmassacre.heavenlibrary.paper.commands.PaperCommand;
-import com.github.rfsmassacre.heavenlibrary.paper.items.HeavenItem;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
 import com.github.rfsmassacre.heavenrpg.classes.OriginClass;
 import com.github.rfsmassacre.heavenrpg.events.ClassChangeEvent;
@@ -38,13 +37,18 @@ public class MainCommand extends PaperCommand
         {
             config.reload();
             locale.reload();
+            for (HeavenRPG.ConfigType configType : HeavenRPG.ConfigType.values())
+            {
+                HeavenRPG.getInstance().getConfiguration(configType).reload();
+            }
+
+            HeavenRPGItem.initialize();
+            Spell.initialize();
             OriginRace.initialize();
             OriginClass.initialize();
             Origin.initialize();
-            HeavenRPGItem.initialize();
-            Spell.loadSpells();
             TaskUtil.reload();
-            locale.sendLocale(sender, "reloaded");
+            locale.sendLocale(sender, "admin.reloaded");
             playSound(sender, SoundKey.SUCCESS);
         }
     }
@@ -68,6 +72,7 @@ public class MainCommand extends PaperCommand
             if (args.length < 2)
             {
                 onInvalidArgs(player, "<item>", "[player]");
+                playSound(player, SoundKey.INCOMPLETE);
                 return;
             }
 
@@ -75,7 +80,7 @@ public class MainCommand extends PaperCommand
             HeavenRPGItem item = HeavenRPGItem.getItem(itemName);
             if (item == null)
             {
-                locale.sendLocale(player, "admin.item.invalid", "{item}", itemName);
+                locale.sendLocale(player, "invalid.item", "{item}", itemName);
                 playSound(player, SoundKey.INCOMPLETE);
                 return;
             }
@@ -105,7 +110,7 @@ public class MainCommand extends PaperCommand
 
             if (!player.equals(target))
             {
-                locale.sendLocale(player, "admin.item.sender", "{amount}",
+                locale.sendLocale(player, "admin.item.success.sender", "{amount}",
                         Integer.toString(itemStack.getAmount()), "{item}", item.getDisplayName(), "{player}",
                         target.getDisplayName());
             }
@@ -123,7 +128,7 @@ public class MainCommand extends PaperCommand
         if (args.length == 2)
         {
             suggestions.addAll(HeavenRPGItem.getItems().stream()
-                    .map(HeavenItem::getName)
+                    .map(HeavenRPGItem::getName)
                     .toList());
         }
         else if (args.length == 3)
@@ -157,7 +162,7 @@ public class MainCommand extends PaperCommand
             {
                 if (!(sender instanceof Player player))
                 {
-                    locale.sendLocale(sender, true, "invalid.console");
+                    onConsole(sender);
                     return;
                 }
 
@@ -169,23 +174,23 @@ public class MainCommand extends PaperCommand
                 }
 
                 String raceName = args[1];
-                OriginRace race = OriginRace.getRace(raceName);
-                if (race == null)
+                OriginRace originRace = OriginRace.getRace(raceName);
+                if (originRace == null)
                 {
-                    locale.sendLocale(sender, "invalid.race", "{arg}", raceName);
+                    locale.sendLocale(sender, "invalid.race", "{race}", raceName);
                     playSound(player, SoundKey.INCOMPLETE);
                     return;
                 }
 
-                change(sender, origin, race.getClass());
+                change(sender, origin, originRace.getClass());
             }
             else
             {
                 String raceName = args[1];
-                OriginRace race = OriginRace.getRace(raceName);
-                if (race == null)
+                OriginRace originRace = OriginRace.getRace(raceName);
+                if (originRace == null)
                 {
-                    locale.sendLocale(sender, "invalid.race", "{arg}", raceName);
+                    locale.sendLocale(sender, "invalid.race", "{race}", raceName);
                     playSound(sender, SoundKey.INCOMPLETE);
                     return;
                 }
@@ -195,13 +200,13 @@ public class MainCommand extends PaperCommand
                 {
                     if (origin == null)
                     {
-                        locale.sendLocale(sender, true, "invalid.no-player", "{name}",
+                        locale.sendLocale(sender, true, "invalid.player", "{name}",
                                 playerName);
                         playSound(sender, SoundKey.INCOMPLETE);
                         return;
                     }
 
-                    change(sender, origin, race.getClass());
+                    change(sender, origin, originRace.getClass());
                 });
             }
         }
@@ -228,14 +233,16 @@ public class MainCommand extends PaperCommand
                             return;
                         }
 
-                        locale.sendLocale(origin.getPlayer(), true, "admin.race.other",
-                                "{player}", origin.getDisplayName(), "{race}",
+                        origin.setOriginRace(clazz);
+                        locale.sendLocale(origin.getPlayer(), "admin.race.success.target", "{race}",
                                 origin.getOriginRace().getDisplayName());
                         if (!sender.equals(origin.getPlayer()))
                         {
-                            locale.sendLocale(sender, true, "admin.race.other", "{player}",
+                            locale.sendLocale(sender, "admin.race.success.sender", "{player}",
                                     origin.getDisplayName(), "{race}", origin.getOriginRace().getDisplayName());
                         }
+
+                        playSound(sender, SoundKey.SUCCESS);
                     });
                 }
                 catch (IllegalArgumentException exception)
@@ -266,11 +273,11 @@ public class MainCommand extends PaperCommand
         }
     }
 
-    private class RaceCommand extends PaperSubCommand
+    private class ClassCommand extends PaperSubCommand
     {
-        public RaceCommand()
+        public ClassCommand()
         {
-            super("race");
+            super("class");
         }
 
         @Override
@@ -279,7 +286,7 @@ public class MainCommand extends PaperCommand
             //race change
             if (args.length < 2)
             {
-                onInvalidArgs(sender, "<race>", "[player]");
+                onInvalidArgs(sender, "<class>", "[player]");
             }
             //race change <race>
             else if (args.length == 2)
@@ -297,24 +304,24 @@ public class MainCommand extends PaperCommand
                     return;
                 }
 
-                String raceName = args[1];
-                OriginRace race = OriginRace.getRace(raceName);
-                if (race == null)
+                String className = args[1];
+                OriginClass originClass = OriginClass.getClass(className);
+                if (originClass == null)
                 {
-                    locale.sendLocale(sender, "invalid.race", "{arg}", raceName);
+                    locale.sendLocale(sender, "invalid.class", "{class}", className);
                     playSound(player, SoundKey.INCOMPLETE);
                     return;
                 }
 
-                change(sender, origin, race.getClass());
+                change(sender, origin, originClass.getClass());
             }
             else
             {
-                String raceName = args[1];
-                OriginRace race = OriginRace.getRace(raceName);
-                if (race == null)
+                String className = args[1];
+                OriginClass originClass = OriginClass.getClass(className);
+                if (originClass == null)
                 {
-                    locale.sendLocale(sender, "invalid.race", "{arg}", raceName);
+                    locale.sendLocale(sender, "invalid.class", "{class}", className);
                     playSound(sender, SoundKey.INCOMPLETE);
                     return;
                 }
@@ -324,13 +331,13 @@ public class MainCommand extends PaperCommand
                 {
                     if (origin == null)
                     {
-                        locale.sendLocale(sender, true, "invalid.no-player", "{name}",
+                        locale.sendLocale(sender, true, "invalid.player", "{name}",
                                 playerName);
                         playSound(sender, SoundKey.INCOMPLETE);
                         return;
                     }
 
-                    change(sender, origin, race.getClass());
+                    change(sender, origin, originClass.getClass());
                 });
             }
         }
@@ -339,7 +346,7 @@ public class MainCommand extends PaperCommand
         {
             if (clazz == null || OriginClass.getClass(clazz) == null)
             {
-                locale.sendLocale(sender, true, "admin.race.failed");
+                locale.sendLocale(sender, true, "admin.class.failed");
                 return;
             }
 
@@ -352,19 +359,23 @@ public class MainCommand extends PaperCommand
                         ClassChangeEvent event = new ClassChangeEvent(origin, clazz);
                         if (!event.callEvent())
                         {
-                            locale.sendLocale(sender, "admin.race.failed");
+                            locale.sendLocale(sender, "admin.class.failed", "{player}",
+                                    origin.getDisplayName(), "{class}", event.getOriginClass().getDisplayName());
                             playSound(sender, SoundKey.INCOMPLETE);
                             return;
                         }
 
-                        locale.sendLocale(origin.getPlayer(), true, "admin.race.other",
-                                "{player}", origin.getDisplayName(), "{race}",
-                                origin.getOriginRace().getDisplayName());
+                        origin.setOriginClass(clazz);
+                        locale.sendLocale(origin.getPlayer(), true, "admin.class.success.target",
+                                "{class}", origin.getOriginClass().getDisplayName());
                         if (!sender.equals(origin.getPlayer()))
                         {
-                            locale.sendLocale(sender, true, "admin.race.other", "{player}",
-                                    origin.getDisplayName(), "{race}", origin.getOriginRace().getDisplayName());
+                            locale.sendLocale(sender, true, "admin.class.success.sender",
+                                    "{player}", origin.getDisplayName(), "{class}",
+                                    origin.getOriginClass().getDisplayName());
                         }
+
+                        playSound(sender, SoundKey.SUCCESS);
                     });
                 }
                 catch (IllegalArgumentException exception)

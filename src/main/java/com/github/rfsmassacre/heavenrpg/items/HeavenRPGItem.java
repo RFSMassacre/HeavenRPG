@@ -1,5 +1,6 @@
 package com.github.rfsmassacre.heavenrpg.items;
 
+import com.github.rfsmassacre.heavenlibrary.interfaces.LocaleData;
 import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperConfiguration;
 import com.github.rfsmassacre.heavenlibrary.paper.items.HeavenItem;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
@@ -56,7 +57,7 @@ public abstract class HeavenRPGItem extends HeavenItem
         super(HeavenRPG.getInstance(), material, amount, name, displayName, lore);
 
         PaperConfiguration config = HeavenRPG.getInstance().getConfiguration(HeavenRPG.ConfigType.ITEMS);
-        setDisplayName(config.getString(name + ".display-name" + displayName));
+        setDisplayName(LocaleData.format(config.getString(name + ".display-name" + displayName)));
         setItemLore(config.getStringList(name + ".lore"));
         setCustomModelData(config.getInt(name + ".custom-model-data", 0));
     }

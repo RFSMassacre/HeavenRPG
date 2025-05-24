@@ -1,5 +1,7 @@
 package com.github.rfsmassacre.heavenrpg.spells;
 
+import com.github.rfsmassacre.heavenlibrary.interfaces.LocaleData;
+import com.github.rfsmassacre.heavenrpg.utils.RomanNumeralUtil;
 import org.bukkit.Registry;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.potion.PotionEffect;
@@ -22,8 +24,8 @@ public class PrayerSpell extends Spell
         this.noBlessingsFound = getString("no-blessings-message", "&f{target}&c has every blessing!");
         this.blessingReceived = getString("blessing-received",
                 "&f{sender}&e has blessed you with &b{potion} {amplify}&e!");
-        this.blessingSent = getString("blessing-received",
-                "&7You blessed &f{sender}&7 with &b{potion} {amplify}&7!");
+        this.blessingSent = getString("blessing-sent",
+                "&7You blessed &f{target}&7 with &b{potion} {amplify}&7!");
         this.durationMin = getInt("duration.min", 3000);
         this.durationMax = getInt("duration.max", 6000);
         this.amplifyMin = getInt("amplify.min", 0);
@@ -42,8 +44,7 @@ public class PrayerSpell extends Spell
 
         List<PotionEffectType> potionTypes = new ArrayList<>(Registry.POTION_EFFECT_TYPE.stream()
                 .filter((potionType) ->
-                        potionType.getCategory().equals(PotionEffectTypeCategory.BENEFICIAL) ||
-                                potionType.getCategory().equals(PotionEffectTypeCategory.NEUTRAL))
+                        potionType.getCategory().equals(PotionEffectTypeCategory.BENEFICIAL))
                 .toList());
         potionTypes.removeIf(target::hasPotionEffect);
         if (potionTypes.isEmpty())
@@ -55,12 +56,18 @@ public class PrayerSpell extends Spell
         SecureRandom random = new SecureRandom();
         PotionEffectType potionType = potionTypes.get(random.nextInt(potionTypes.size()));
         int duration = random.nextInt(durationMin, durationMax);
-        int amplify = random.nextInt(amplifyMin, amplifyMax);
+        if (potionType.isInstant())
+        {
+            duration = 1;
+        }
+
+        int amplify = random.nextInt(amplifyMin, amplifyMax + 1);
+        String romanNumeral = RomanNumeralUtil.toRomanNumeral(amplify + 1);
         target.addPotionEffect(new PotionEffect(potionType, duration, amplify));
         sendActionMessage(target, blessingReceived, "{sender}", getDisplayName(entity), "{potion}",
-                potionType.getName(), "{amplify}", Integer.toString(amplify + 1));
-        sendActionMessage(entity, blessingSent, "{target}", getDisplayName(target),
-                potionType.getName(), "{amplify}", Integer.toString(amplify + 1));
+                LocaleData.capitalize(potionType.getKey().value()), "{amplify}", romanNumeral);
+        sendActionMessage(entity, blessingSent, "{target}", getDisplayName(target), "{potion}",
+                LocaleData.capitalize(potionType.getKey().value()), "{amplify}", romanNumeral);
         return true;
     }
 }

@@ -17,11 +17,7 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
-import org.jetbrains.annotations.NotNull;
-import org.reflections.Reflections;
-import org.reflections.scanners.Scanners;
 
-import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -30,9 +26,9 @@ import java.util.regex.Pattern;
 @Getter
 public abstract class Spell implements Listener
 {
-    private static final Map<Class<? extends Spell>, Spell> SPELLS = new HashMap<>();
+    private static final Map<String, Spell> SPELLS = new HashMap<>();
 
-    public static void loadSpells()
+    public static void initialize()
     {
         for (Spell spell : SPELLS.values())
         {
@@ -45,6 +41,8 @@ public abstract class Spell implements Listener
         }
 
         SPELLS.clear();
+        addSpell(new PrayerSpell());
+        /*
         Reflections reflections = new Reflections("com.github.rfsmassacre.heavenrpg.spells", Scanners.SubTypes);
         Set<Class<? extends Spell>> spellClasses = reflections.getSubTypesOf(Spell.class);
         for (Class<? extends Spell> spellClass : spellClasses)
@@ -62,16 +60,20 @@ public abstract class Spell implements Listener
                 }
             }
         }
+         */
     }
 
-    public static <T extends Spell> @NotNull T getSpell(Class<T> clazz)
+    public static <T extends Spell> T getSpell(Class<T> clazz)
     {
-        if (Modifier.isAbstract(clazz.getModifiers()))
+        for (Spell spell : SPELLS.values())
         {
-            throw new IllegalArgumentException();
+            if (clazz.isInstance(spell))
+            {
+                return clazz.cast(spell);
+            }
         }
 
-        return clazz.cast(SPELLS.get(clazz));
+        return null;
     }
 
     public static Spell getSpell(String internalName)
@@ -94,7 +96,7 @@ public abstract class Spell implements Listener
 
     public static void addSpell(Spell spell)
     {
-        SPELLS.put(spell.getClass(), spell);
+        SPELLS.put(spell.internalName, spell);
         Bukkit.getPluginManager().registerEvents(spell, HeavenRPG.getInstance());
     }
 
@@ -109,8 +111,6 @@ public abstract class Spell implements Listener
     protected final String displayName;
     @Getter
     protected final long cooldown;
-    @Getter
-    protected final String race;
     @Getter
     protected final int level, customModelId;
     @Getter
@@ -131,20 +131,18 @@ public abstract class Spell implements Listener
         this.internalName = internalName;
         this.displayName = getString("display-name", internalName);
         this.cooldown = getInt("cooldown", 0);
-        this.race = getString("race", null);
         this.level = getInt("level", 0);
         this.beneficial = getBoolean("beneficial", false);
         this.bindable = getBoolean("bindable", true);
         this.customModelId = getInt("custom-model-data", 0);
         this.description = getStringList("description");
-        this.cooldownMessage = getString("cooldown-message", displayName + "&r &cis on cooldown!");
-        this.range = getDouble("range", 0);
-        this.dot = getDouble("dot", 0.0);
+        this.cooldownMessage = getString("cooldown-message", displayName +
+                "&r &cis on cooldown! &4(&e{time}&4)");
+        this.range = getDouble("range", 0.0);
+        this.dot = getDouble("dot", 0.2);
         this.itemMessage = getString("no-item-message", displayName + "&r &cis missing an item!");
         this.levelMessage = getString("level-message", displayName + "&r &crequires you to be &eLVL "
                 + level + "&c!");
-        this.raceMessage = getString("race-message", displayName + "&r &cis a &e" +
-                LocaleData.capitalize(race) + "&c ability!");
         this.noTargetMessage = getString("no-target-message", displayName + "&r &crequires a target!");
     }
 
@@ -205,9 +203,8 @@ public abstract class Spell implements Listener
             return false;
         }
 
-        if (!origin.getOriginRace().getName().equals(race))
+        if (!origin.getOriginRace().isRaceSpell(this) && !origin.getOriginClass().isClassSpell(this))
         {
-            locale.sendActionMessage(origin.getPlayer(), raceMessage);
             return false;
         }
 
@@ -228,21 +225,20 @@ public abstract class Spell implements Listener
         }
 
         long cooldown = cooldowns.getOrDefault(entity.getUniqueId(), 0L);
-        if (System.currentTimeMillis() - cooldown > this.cooldown)
+        if (System.currentTimeMillis() - cooldown < this.cooldown)
         {
-            SpellCastEvent event = new SpellCastEvent(entity, this);
-            if (event.callEvent() && activate(entity))
-            {
-                cooldowns.put(entity.getUniqueId(), System.currentTimeMillis());
-                SpellCooldownEvent cooldownEvent = new SpellCooldownEvent(entity, this);
-                Bukkit.getPluginManager().callEvent(cooldownEvent);
-                return true;
-            }
+            sendActionMessage(entity, cooldownMessage, "{time}",
+                    LocaleData.formatTime((double) getCooldown(entity) / 1000));
+            return false;
         }
-        else if (entity instanceof Player player)
+
+        SpellCastEvent event = new SpellCastEvent(entity, this);
+        if (event.callEvent() && activate(entity))
         {
-            locale.sendActionLocale(player, false, "spells.cooldown", "{spell}", displayName,
-                    "{cooldown}", LocaleData.formatTime((double) getCooldown(player) / 1000.0));
+            cooldowns.put(entity.getUniqueId(), System.currentTimeMillis());
+            SpellCooldownEvent cooldownEvent = new SpellCooldownEvent(entity, this);
+            Bukkit.getPluginManager().callEvent(cooldownEvent);
+            return true;
         }
 
         return false;

@@ -79,14 +79,22 @@ public abstract class OriginRace
         return new HashSet<>(CACHE.values());
     }
 
-    private final String name;
-    private final Map<Integer, Class<? extends Spell>> spells;
-    private String displayName;
+    protected final String name;
+    protected final Map<Integer, String> spells;
+    protected String displayName;
 
     public OriginRace(String name)
     {
         this.name = name;
         this.spells = new HashMap<>();
+        this.displayName = name;
+    }
+
+    public OriginRace(String name, String displayName)
+    {
+        this(name);
+
+        setDisplayName(displayName);
     }
 
     public void setDisplayName(String displayName)
@@ -94,9 +102,15 @@ public abstract class OriginRace
         this.displayName = LocaleData.undoFormat(displayName);
     }
 
+    public String getDisplayName()
+    {
+        return LocaleData.format(displayName);
+    }
+
     public <T extends Spell> void registerSpell(int level, Class<T> clazz)
     {
-        spells.put(level, clazz);
+        Spell spell = Spell.getSpell(clazz);
+        spells.put(level, spell.getInternalName());
     }
 
     public Spell getSpell(int level)
@@ -169,5 +183,10 @@ public abstract class OriginRace
                 }
             }
         }
+    }
+
+    public boolean isRaceSpell(Spell spell)
+    {
+        return spells.containsValue(spell.getInternalName());
     }
 }

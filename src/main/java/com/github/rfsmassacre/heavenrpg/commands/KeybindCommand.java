@@ -68,9 +68,9 @@ public class KeybindCommand extends SimplePaperCommand
             return;
         }
 
-        if (!spell.getRace().equals(origin.getOriginRace().getName()))
+        if (!origin.getOriginRace().isRaceSpell(spell) && !origin.getOriginClass().isClassSpell(spell))
         {
-            locale.sendLocale(player, "spell.wrong-race", "{spell}", spell.getDisplayName());
+            locale.sendLocale(player, "spell.cant-set", "{spell}", spell.getDisplayName());
             return;
         }
 
@@ -105,8 +105,8 @@ public class KeybindCommand extends SimplePaperCommand
         {
             suggestions.add(NONE_SPELL);
             suggestions.addAll(Spell.getSpells().stream()
-                    .filter((spell) -> spell.isBindable() &&
-                            spell.getRace().equals(origin.getOriginRace().getName()))
+                    .filter((spell) -> spell.isBindable() && (origin.getOriginRace().isRaceSpell(spell) ||
+                            origin.getOriginClass().isClassSpell(spell)))
                     .map(Spell::getInternalName)
                     .toList());
         }

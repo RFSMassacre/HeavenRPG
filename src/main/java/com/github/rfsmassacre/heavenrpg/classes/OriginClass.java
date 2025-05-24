@@ -9,6 +9,7 @@ import com.github.rfsmassacre.heavenrpg.spells.Spell;
 import lombok.Getter;
 import lombok.Setter;
 import net.kyori.adventure.key.Key;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
@@ -65,14 +66,14 @@ public abstract class OriginClass
         return new HashSet<>(CACHE.values());
     }
 
-    private final Set<String> spells;
+    private final Map<Integer, String> spells;
     private String name;
     private String displayName;
     private String castItem;
 
     public OriginClass()
     {
-        this.spells = new HashSet<>();
+        this.spells = new HashMap<>();
     }
 
     public OriginClass(String name)
@@ -117,19 +118,32 @@ public abstract class OriginClass
         }
     }
 
-    public void addSpell(Spell spell)
+    public Spell getSpell(int level)
     {
-        spells.add(spell.getInternalName());
+        return Spell.getSpell(spells.get(level));
+    }
+
+    public void addSpell(int level, Class<? extends Spell> clazz)
+    {
+        Spell spell = Spell.getSpell(clazz);
+        if (spell != null)
+        {
+            spells.put(level, spell.getInternalName());
+        }
+        else
+        {
+            Bukkit.getLogger().severe(clazz.getSimpleName() + " is not a registered spell!");
+        }
     }
 
     public void removeSpell(Spell spell)
     {
-        spells.removeIf((name) -> spell.getInternalName().equals(name));
+        spells.values().removeIf((name) -> spell.getInternalName().equals(name));
     }
 
     public List<? extends Spell> getSpells()
     {
-        return spells.stream()
+        return spells.values().stream()
                 .map(Spell::getSpell)
                 .toList();
     }
@@ -201,6 +215,15 @@ public abstract class OriginClass
         }
     }
 
+    public void setCastItem(Class<? extends CastItem> clazz)
+    {
+        CastItem item = HeavenRPGItem.getItem(clazz);
+        if (item != null)
+        {
+            this.castItem = item.getName();
+        }
+    }
+
     public CastItem getCastItem()
     {
         if (HeavenRPGItem.getItem(castItem) instanceof CastItem item)
@@ -209,5 +232,10 @@ public abstract class OriginClass
         }
 
         return null;
+    }
+
+    public boolean isClassSpell(Spell spell)
+    {
+        return spells.containsValue(spell.getInternalName());
     }
 }

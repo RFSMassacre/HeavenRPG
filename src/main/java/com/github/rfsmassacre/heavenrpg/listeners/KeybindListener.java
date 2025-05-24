@@ -11,6 +11,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,6 +47,19 @@ public class KeybindListener implements Listener
     @EventHandler(priority = EventPriority.LOWEST)
     public void onAnimation(PlayerDropItemEvent event)
     {
+        Player player = event.getPlayer();
+        Origin origin = Origin.getOrigin(player.getUniqueId());
+        if (origin == null)
+        {
+            return;
+        }
+
+        ItemStack item = event.getItemDrop().getItemStack();
+        if (!origin.getOriginClass().getCastItem().equals(item))
+        {
+            return;
+        }
+
         clicked(Origin.KeyBind.DROP, event.getPlayer().getUniqueId());
     }
 
@@ -59,12 +73,19 @@ public class KeybindListener implements Listener
             return;
         }
 
+        ItemStack item = event.getItemDrop().getItemStack();
+        if (!origin.getOriginClass().getCastItem().equals(item))
+        {
+            return;
+        }
+
         Spell spell = origin.getSpell(Origin.KeyBind.DROP);
         if (spell != null)
         {
-            event.setCancelled(true);
             spell.cast(player);
         }
+
+        event.setCancelled(true);
     }
 
     @EventHandler
@@ -73,6 +94,12 @@ public class KeybindListener implements Listener
         Player player = event.getPlayer();
         Origin origin = Origin.getOrigin(player.getUniqueId());
         if (origin == null)
+        {
+            return;
+        }
+
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!origin.getOriginClass().getCastItem().equals(item))
         {
             return;
         }
@@ -86,10 +113,11 @@ public class KeybindListener implements Listener
         Spell spell = origin.getSpell(Origin.KeyBind.SWAP);
         if (spell != null)
         {
-            event.setCancelled(true);
             spell.cast(player);
             clicked(Origin.KeyBind.SWAP, player.getUniqueId());
         }
+
+        event.setCancelled(true);
     }
 
     @EventHandler
@@ -114,6 +142,12 @@ public class KeybindListener implements Listener
             return;
         }
 
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!origin.getOriginClass().getCastItem().equals(item))
+        {
+            return;
+        }
+
         if (event.getAction().isLeftClick())
         {
             long lastClicked = getClicked(Origin.KeyBind.LEFT_CLICK, player.getUniqueId());
@@ -129,6 +163,8 @@ public class KeybindListener implements Listener
                 spell.cast(player);
                 clicked(Origin.KeyBind.LEFT_CLICK, player.getUniqueId());
             }
+
+            event.setCancelled(true);
         }
         else if (event.getAction().isRightClick())
         {
@@ -141,19 +177,26 @@ public class KeybindListener implements Listener
             Spell spell = origin.getSpell(Origin.KeyBind.RIGHT_CLICK);
             if (spell != null)
             {
-                event.setCancelled(true);
                 spell.cast(player);
                 clicked(Origin.KeyBind.RIGHT_CLICK, player.getUniqueId());
             }
+
+            event.setCancelled(true);
         }
     }
 
     @EventHandler
-    public void onDoubleSneak(PlayerToggleSneakEvent event)
+    public void onSneak(PlayerToggleSneakEvent event)
     {
         Player player = event.getPlayer();
         Origin origin = Origin.getOrigin(player.getUniqueId());
         if (origin == null)
+        {
+            return;
+        }
+
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!origin.getOriginClass().getCastItem().equals(item))
         {
             return;
         }
@@ -167,9 +210,10 @@ public class KeybindListener implements Listener
         Spell spell = origin.getSpell(Origin.KeyBind.SNEAK);
         if (spell != null)
         {
-            event.setCancelled(true);
             spell.cast(player);
             clicked(Origin.KeyBind.SNEAK, player.getUniqueId());
         }
+
+        event.setCancelled(true);
     }
 }

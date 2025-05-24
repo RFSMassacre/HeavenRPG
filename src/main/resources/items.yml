@@ -1,0 +1,5 @@
+PriestBook:
+  display-name: "&eHoly Book"
+  lore:
+    - "&fTest"
+  custom-model-data: 0

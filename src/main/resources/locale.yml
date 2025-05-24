@@ -1,9 +1,24 @@
+prefix: "&3&lH&beaven&6&lRPG &7&l|&f "
+
 admin:
+  reloaded: "&7Reloaded all files!"
   item:
-    invalid: "&f{item} &cis an invalid item!"
     success:
       target: "&aYou have spawn &ex{amount} {item}&a."
       sender: "&aYou have given &e{amount} {item}&a to &f{player}&a."
+  race:
+    failed: "&cFailed to set &f{player} &cto &f{race}&c!"
+    success:
+      sender: "&aSet &f{player}&a's race to &f{race}&a."
+      target: "&aYou are now &f{race}&a."
+  class:
+    failed: "&cFailed to set &f{player} &cto &f{class}&c!"
+    success:
+      sender: "&aSet &f{player}&a's class to &f{class}&a."
+      target: "&aYou are now &f{class}&a."
 
 invalid:
+  item: "&f{item} &cis an invalid item!"
   player: "&f{player}&c could not be found!"
+  race: "&f{race}&c is an invalid race!"
+  class: "&f{class}&c is an invalid class!"

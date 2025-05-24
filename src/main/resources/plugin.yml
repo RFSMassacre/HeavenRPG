@@ -3,6 +3,8 @@ version: '${project.version}'
 main: com.github.rfsmassacre.heavenrpg.HeavenRPG
 api-version: '1.21'
 author: "RFSMassacre"
+depend:
+  - HeavenLibrary
 commands:
   heavenrpg:
     usage: "/heavenrpg"
