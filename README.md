@@ -1,3 +1,4 @@
+![](logo.png)
 # HeavenRPG
 _This plugin allows server owners and plugin developers to make their own races and classes with spells underneath this framework._
 
