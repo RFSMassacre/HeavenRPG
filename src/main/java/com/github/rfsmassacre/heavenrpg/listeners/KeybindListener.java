@@ -82,13 +82,12 @@ public class KeybindListener implements Listener
             return;
         }
 
+        event.setCancelled(true);
         Spell spell = origin.getSpell(Origin.KeyBind.DROP);
         if (spell != null)
         {
             spell.cast(player);
         }
-
-        event.setCancelled(true);
     }
 
     @EventHandler
@@ -108,6 +107,7 @@ public class KeybindListener implements Listener
             return;
         }
 
+        event.setCancelled(true);
         long lastClicked = getClicked(Origin.KeyBind.SWAP, player.getUniqueId());
         if (System.currentTimeMillis() - lastClicked < THRESHOLD)
         {
@@ -120,8 +120,6 @@ public class KeybindListener implements Listener
             spell.cast(player);
             clicked(Origin.KeyBind.SWAP, player.getUniqueId());
         }
-
-        event.setCancelled(true);
     }
 
     @EventHandler
@@ -141,7 +139,6 @@ public class KeybindListener implements Listener
         }
 
         removeClick(Origin.KeyBind.DROP, player.getUniqueId());
-
         ItemStack item = player.getInventory().getItemInMainHand();
         HeavenRPGItem castItem = origin.getOriginClass().getCastItem();
         if (castItem == null || !castItem.equals(item))
@@ -156,6 +153,7 @@ public class KeybindListener implements Listener
 
         if (event.getAction().isLeftClick())
         {
+            event.setCancelled(true);
             long lastClicked = getClicked(Origin.KeyBind.LEFT_CLICK, player.getUniqueId());
             if (System.currentTimeMillis() - lastClicked < THRESHOLD)
             {
@@ -165,15 +163,13 @@ public class KeybindListener implements Listener
             Spell spell = origin.getSpell(Origin.KeyBind.LEFT_CLICK);
             if (spell != null)
             {
-                event.setCancelled(true);
                 spell.cast(player);
                 clicked(Origin.KeyBind.LEFT_CLICK, player.getUniqueId());
             }
-
-            event.setCancelled(true);
         }
         else if (event.getAction().isRightClick())
         {
+            event.setCancelled(true);
             long lastClicked = getClicked(Origin.KeyBind.RIGHT_CLICK, player.getUniqueId());
             if (System.currentTimeMillis() - lastClicked < THRESHOLD)
             {
@@ -186,8 +182,6 @@ public class KeybindListener implements Listener
                 spell.cast(player);
                 clicked(Origin.KeyBind.RIGHT_CLICK, player.getUniqueId());
             }
-
-            event.setCancelled(true);
         }
     }
 

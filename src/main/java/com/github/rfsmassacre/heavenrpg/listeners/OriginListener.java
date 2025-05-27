@@ -3,6 +3,7 @@ package com.github.rfsmassacre.heavenrpg.listeners;
 import com.github.rfsmassacre.heavenrpg.events.ClassChangeEvent;
 import com.github.rfsmassacre.heavenrpg.events.RaceChangeEvent;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -44,6 +45,7 @@ public class OriginListener implements Listener
         }
 
         origin.setLastHealth(player.getHealth());
+        origin.setLastMaxHealth(player.getAttribute(Attribute.MAX_HEALTH).getValue());
         origin.setLastLogin(Instant.now().toEpochMilli());
         Origin.saveOrigin(origin, true);
         Origin.removeOrigin(player.getUniqueId());
