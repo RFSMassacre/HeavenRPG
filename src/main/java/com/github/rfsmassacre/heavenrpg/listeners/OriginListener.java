@@ -27,6 +27,7 @@ public class OriginListener implements Listener
             }
 
             origin.setLastLogin(Instant.now().toEpochMilli());
+            origin.updateStats();
             Origin.addOrigin(origin);
             Origin.saveOrigin(origin, false);
         });
@@ -61,7 +62,7 @@ public class OriginListener implements Listener
             return;
         }
 
-        if (!origin.getDiet().contains(event.getItem().getType()))
+        if (!origin.canEat(event.getItem().getType()))
         {
             event.setCancelled(true);
         }
@@ -71,13 +72,13 @@ public class OriginListener implements Listener
     public void onRaceChange(RaceChangeEvent event)
     {
         Origin origin = event.getOrigin();
-        origin.getOriginRace().clearStats(origin);
+        origin.updateStats();
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onClassChange(ClassChangeEvent event)
     {
         Origin origin = event.getOrigin();
-        origin.getOriginClass().clearStats(origin);
+        origin.updateStats();
     }
 }

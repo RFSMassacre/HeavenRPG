@@ -3,7 +3,6 @@ package com.github.rfsmassacre.heavenrpg.events;
 import com.github.rfsmassacre.heavenrpg.classes.OriginClass;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
 import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -27,15 +26,19 @@ public class ClassChangeEvent extends Event implements Cancellable
 
     @Getter
     private final Origin origin;
-    @Setter
-    private Class<? extends OriginClass> originClass;
+    private String originClass;
     private boolean cancel;
 
-    public ClassChangeEvent(Origin origin, Class<? extends OriginClass> originClass)
+    public ClassChangeEvent(Origin origin, String originClass)
     {
         this.origin = origin;
         this.originClass = originClass;
         this.cancel = false;
+    }
+
+    public void setOriginClass(OriginClass originClass)
+    {
+        this.originClass = originClass.getName();
     }
 
     public OriginClass getOriginClass()

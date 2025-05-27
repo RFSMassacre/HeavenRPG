@@ -1,5 +1,6 @@
 package com.github.rfsmassacre.heavenrpg.listeners;
 
+import com.github.rfsmassacre.heavenrpg.items.HeavenRPGItem;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
 import com.github.rfsmassacre.heavenrpg.spells.Spell;
 import org.bukkit.entity.Player;
@@ -49,13 +50,14 @@ public class KeybindListener implements Listener
     {
         Player player = event.getPlayer();
         Origin origin = Origin.getOrigin(player.getUniqueId());
-        if (origin == null)
+        if (origin == null || origin.getOriginClass() == null)
         {
             return;
         }
 
         ItemStack item = event.getItemDrop().getItemStack();
-        if (!origin.getOriginClass().getCastItem().equals(item))
+        HeavenRPGItem castItem = origin.getOriginClass().getCastItem();
+        if (castItem == null || !castItem.equals(item))
         {
             return;
         }
@@ -68,13 +70,14 @@ public class KeybindListener implements Listener
     {
         Player player = event.getPlayer();
         Origin origin = Origin.getOrigin(player.getUniqueId());
-        if (origin == null)
+        if (origin == null || origin.getOriginClass() == null)
         {
             return;
         }
 
         ItemStack item = event.getItemDrop().getItemStack();
-        if (!origin.getOriginClass().getCastItem().equals(item))
+        HeavenRPGItem castItem = origin.getOriginClass().getCastItem();
+        if (castItem == null || !castItem.equals(item))
         {
             return;
         }
@@ -93,13 +96,14 @@ public class KeybindListener implements Listener
     {
         Player player = event.getPlayer();
         Origin origin = Origin.getOrigin(player.getUniqueId());
-        if (origin == null)
+        if (origin == null || origin.getOriginClass() == null)
         {
             return;
         }
 
         ItemStack item = player.getInventory().getItemInMainHand();
-        if (!origin.getOriginClass().getCastItem().equals(item))
+        HeavenRPGItem castItem = origin.getOriginClass().getCastItem();
+        if (castItem == null || !castItem.equals(item))
         {
             return;
         }
@@ -124,6 +128,12 @@ public class KeybindListener implements Listener
     public void onClick(PlayerInteractEvent event)
     {
         Player player = event.getPlayer();
+        Origin origin = Origin.getOrigin(player.getUniqueId());
+        if (origin == null || origin.getOriginClass() == null)
+        {
+            return;
+        }
+
         long dropTime = getClicked(Origin.KeyBind.DROP, player.getUniqueId());
         if (System.currentTimeMillis() - dropTime < THRESHOLD)
         {
@@ -131,19 +141,15 @@ public class KeybindListener implements Listener
         }
 
         removeClick(Origin.KeyBind.DROP, player.getUniqueId());
-        Origin origin = Origin.getOrigin(player.getUniqueId());
-        if (origin == null)
+
+        ItemStack item = player.getInventory().getItemInMainHand();
+        HeavenRPGItem castItem = origin.getOriginClass().getCastItem();
+        if (castItem == null || !castItem.equals(item))
         {
             return;
         }
 
         if (!EquipmentSlot.HAND.equals(event.getHand()))
-        {
-            return;
-        }
-
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (!origin.getOriginClass().getCastItem().equals(item))
         {
             return;
         }
@@ -190,13 +196,14 @@ public class KeybindListener implements Listener
     {
         Player player = event.getPlayer();
         Origin origin = Origin.getOrigin(player.getUniqueId());
-        if (origin == null)
+        if (origin == null || origin.getOriginClass() == null)
         {
             return;
         }
 
         ItemStack item = player.getInventory().getItemInMainHand();
-        if (!origin.getOriginClass().getCastItem().equals(item))
+        HeavenRPGItem castItem = origin.getOriginClass().getCastItem();
+        if (castItem == null || !castItem.equals(item))
         {
             return;
         }

@@ -17,8 +17,18 @@ admin:
       sender: "&aSet &f{player}&a's class to &f{class}&a."
       target: "&aYou are now &f{class}&a."
 
+spells:
+  no-keybind: "&f{keybind} &cis not a valid key bind!"
+  keybind: "&eYou set &f{spell}&e to &d{keybind}&e."
+  removed-keybind: "&7You clear your &f{keybind} &7Key."
+  cant-set: "&f{spell}&c cannot be bound. You are not eligible to cast this!"
+  low-level:
+    race: "&f{spell}&c requires &e{race} LVL {requirement}&c but you are &e{race} LVL {level}&c!"
+    class: "&f{spell}&c requires &e{class} LVL {requirement}&c but you are &e{class} LVL {level}&c!"
+
 invalid:
   item: "&f{item} &cis an invalid item!"
   player: "&f{player}&c could not be found!"
   race: "&f{race}&c is an invalid race!"
   class: "&f{class}&c is an invalid class!"
+  spell: "&f{spell} &cis not an ability!"

@@ -18,11 +18,11 @@ import java.util.*;
 
 public abstract class BuffSpell extends Spell
 {
-    private final Set<BukkitTask> tasks;
+    private final transient Set<BukkitTask> tasks;
 
-    protected final Map<UUID, Long> casters;
-    protected final int duration, effectInterval;
-    protected final boolean toggle;
+    protected Map<UUID, Long> casters;
+    protected int duration, effectInterval;
+    protected boolean toggle;
 
     public BuffSpell(String internalName)
     {
@@ -30,9 +30,9 @@ public abstract class BuffSpell extends Spell
 
         this.tasks = new HashSet<>();
         this.casters = new HashMap<>();
-        this.duration = getInt("duration", 1);
-        this.effectInterval = getInt("effect.interval", 1);
-        this.toggle = getBoolean("toggle", false);
+        this.duration = 1;
+        this.effectInterval = 20;
+        this.toggle = false;
     }
 
     public boolean isActive(LivingEntity entity)
@@ -45,13 +45,13 @@ public abstract class BuffSpell extends Spell
         Long lastCast = casters.get(entity.getUniqueId());
         if (lastCast != null)
         {
-            return (this.duration / 20L * 1000L) - (System.currentTimeMillis() - lastCast);
+            return ((this.duration / 20L) * 1000L) - (System.currentTimeMillis() - lastCast);
         }
 
         return 0L;
     }
 
-    protected void activateTimer()
+    public void activateTimer()
     {
         tasks.add(new BukkitRunnable()
         {
@@ -69,7 +69,7 @@ public abstract class BuffSpell extends Spell
         }.runTaskTimer(HeavenRPG.getInstance(), 0L, effectInterval));
     }
 
-    protected void deactivateTimers()
+    public void deactivateTimers()
     {
         for (BukkitTask task : tasks)
         {
@@ -129,10 +129,10 @@ public abstract class BuffSpell extends Spell
                 return true;
             }
         }
-        else if (entity instanceof Player player)
+        else
         {
-            locale.sendActionLocale(player, false, "spells.cooldown", "{spell}", displayName,
-                    "{cooldown}", LocaleData.formatTime((double) getCooldown(player) / 1000.0));
+            sendActionMessage(entity, cooldownMessage, "{spell}", getDisplayName(), "{time}",
+                    LocaleData.formatTime((double) getCooldown(entity) / 1000));
         }
 
         return false;

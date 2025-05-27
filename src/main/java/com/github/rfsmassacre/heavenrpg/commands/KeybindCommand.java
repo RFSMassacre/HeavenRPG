@@ -2,7 +2,9 @@ package com.github.rfsmassacre.heavenrpg.commands;
 
 import com.github.rfsmassacre.heavenlibrary.paper.commands.SimplePaperCommand;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
+import com.github.rfsmassacre.heavenrpg.classes.OriginClass;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
+import com.github.rfsmassacre.heavenrpg.races.OriginRace;
 import com.github.rfsmassacre.heavenrpg.spells.Spell;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -26,13 +28,14 @@ public class KeybindCommand extends SimplePaperCommand
         //kit control <mode>
         if (!(sender instanceof Player player))
         {
-            locale.sendLocale(sender, "commands.player-only");
+            onConsole(sender);
             return;
         }
 
         Origin origin = Origin.getOrigin(player.getUniqueId());
         if (origin == null)
         {
+            playSound(player, SoundKey.INCOMPLETE);
             return;
         }
 
@@ -64,13 +67,33 @@ public class KeybindCommand extends SimplePaperCommand
         Spell spell = Spell.getSpell(spellName);
         if (spell == null || !spell.isBindable())
         {
-            locale.sendLocale(player, true, "spell.no-spell", "{spell}", spellName);
+            locale.sendLocale(player, true, "invalid.spell", "{spell}", spellName);
             return;
         }
 
-        if (!origin.getOriginRace().isRaceSpell(spell) && !origin.getOriginClass().isClassSpell(spell))
+        OriginRace originRace = origin.getOriginRace();
+        OriginClass originClass = origin.getOriginClass();
+        if (!originRace.isRaceSpell(spell) && !originClass.isClassSpell(spell))
         {
             locale.sendLocale(player, "spell.cant-set", "{spell}", spell.getDisplayName());
+            return;
+        }
+
+        if (originRace.isRaceSpell(spell) && origin.getRaceLevel() < spell.getLevel())
+        {
+            locale.sendLocale(player, "spell.low-level.race", "{spell}", spell.getDisplayName(), "{race}",
+                    originRace.getFormatDisplay(), "{requirement}", Integer.toString(spell.getLevel()), "{level}",
+                    Integer.toString((int) origin.getRaceLevel()));
+            playSound(player, SoundKey.INCOMPLETE);
+            return;
+        }
+
+        if (originClass.isClassSpell(spell) && origin.getClassLevel() < spell.getLevel())
+        {
+            locale.sendLocale(player, "spell.low-level.class", "{spell}", spell.getDisplayName(), "{class}",
+                    originClass.getFormatDisplay(), "{requirement}", Integer.toString(spell.getLevel()), "{level}",
+                    Integer.toString((int) origin.getClassLevel()));
+            playSound(player, SoundKey.INCOMPLETE);
             return;
         }
 

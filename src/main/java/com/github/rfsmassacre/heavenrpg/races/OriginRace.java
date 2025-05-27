@@ -3,47 +3,48 @@ package com.github.rfsmassacre.heavenrpg.races;
 import com.github.rfsmassacre.heavenlibrary.interfaces.LocaleData;
 import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperConfiguration;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
+import com.github.rfsmassacre.heavenrpg.data.RaceYaml;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
 import com.github.rfsmassacre.heavenrpg.spells.Spell;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.key.Key;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.*;
 
 @Getter
 @Setter
-public abstract class OriginRace
+public class OriginRace
 {
-    /**
-     * Implement this if your race has a transforming mechanic to make it streamlined.
-     */
-    public interface Transform
-    {
-        boolean transform(Origin origin, boolean form);
-
-        boolean isTransformed(Origin origin);
-
-        default boolean transform(Origin origin)
-        {
-            return transform(origin, !isTransformed(origin));
-        }
-    }
-
     private static final String RACE_KEY = "heavenrpg_race";
-    public static final Map<String, OriginRace> CACHE = new HashMap<>();
+    private static final Map<String, OriginRace> CACHE = new HashMap<>();
+    private static RaceYaml DATA;
 
     public static void initialize()
     {
-        CACHE.clear();
-        registerRace(new Human());
+        DATA = new RaceYaml();
+        loadRaces();
+        if (CACHE.isEmpty())
+        {
+            OriginRace human = new OriginRace("Human", "&fHuman");
+            OriginRace orc = new OriginRace("Orc", "&6Orc");
+            orc.addStat(new Origin.AttributeStat(Attribute.SCALE, 0.5,
+                    AttributeModifier.Operation.ADD_SCALAR));
+            orc.addStat(new Origin.AttributeStat(Attribute.ENTITY_INTERACTION_RANGE, 0.5,
+                    AttributeModifier.Operation.ADD_SCALAR));
+            orc.addStat(new Origin.AttributeStat(Attribute.BLOCK_INTERACTION_RANGE, 0.5,
+                    AttributeModifier.Operation.ADD_SCALAR));
+            orc.addSpell("Defense");
+            orc.addSpell("OrcDefense");
+            registerRace(human);
+            registerRace(orc);
+            saveRaces();
+        }
     }
 
     public static void registerRace(OriginRace originRace)
@@ -61,33 +62,56 @@ public abstract class OriginRace
         return CACHE.get(name);
     }
 
-    public static <T extends OriginRace> T getRace(Class<T> clazz)
-    {
-        for (OriginRace originRace : CACHE.values())
-        {
-            if (clazz.isInstance(originRace))
-            {
-                return clazz.cast(originRace);
-            }
-        }
-
-        return null;
-    }
-
     public static Set<OriginRace> getRaces()
     {
         return new HashSet<>(CACHE.values());
     }
 
-    protected final String name;
-    protected final Map<Integer, String> spells;
+    public static void loadRaces()
+    {
+        CACHE.clear();
+        for (OriginRace originRace : DATA.allDynamic("com.github.rfsmassacre.heavenrpg.races."))
+        {
+            registerRace(originRace);
+        }
+    }
+
+    public static void saveRace(OriginRace originRace)
+    {
+        DATA.writeDynamic(originRace.name, originRace);
+    }
+
+    public static void saveRaces()
+    {
+        for (OriginRace originRace : CACHE.values())
+        {
+            saveRace(originRace);
+        }
+    }
+
+    public static OriginRace getDefaultRace()
+    {
+        PaperConfiguration config = HeavenRPG.getInstance().getConfiguration();
+        return getRace(config.getString("default.race", "Human"));
+    }
+
+    protected List<String> spellNames;
+    protected List<Origin.AttributeStat> attributeStats;
+    protected String name;
     protected String displayName;
+
+    public OriginRace()
+    {
+        this.spellNames = new ArrayList<>();
+        this.attributeStats = new ArrayList<>();
+    }
 
     public OriginRace(String name)
     {
+        this();
+
         this.name = name;
-        this.spells = new HashMap<>();
-        this.displayName = name;
+        setDisplayName(name);
     }
 
     public OriginRace(String name, String displayName)
@@ -97,30 +121,48 @@ public abstract class OriginRace
         setDisplayName(displayName);
     }
 
+    @SafeVarargs
+    public OriginRace(String name, String displayName, String... spellNames)
+    {
+        this(name, displayName);
+
+        for (String spellName : spellNames)
+        {
+            addSpell(spellName);
+        }
+    }
+
     public void setDisplayName(String displayName)
     {
         this.displayName = LocaleData.undoFormat(displayName);
     }
 
-    public String getDisplayName()
+    public String getFormatDisplay()
     {
         return LocaleData.format(displayName);
     }
 
-    public <T extends Spell> void registerSpell(int level, Class<T> clazz)
+    public void addSpell(String spellName)
     {
-        Spell spell = Spell.getSpell(clazz);
-        spells.put(level, spell.getInternalName());
+        Spell spell = Spell.getSpell(spellName);
+        if (spell != null && !spellNames.contains(spell.getInternalName()))
+        {
+            spellNames.add(spell.getInternalName());
+        }
     }
 
-    public Spell getSpell(int level)
+    public void addStat(Origin.AttributeStat stat)
     {
-        return Spell.getSpell(spells.get(level));
+        removeStat(stat.getAttribute());
+        attributeStats.add(stat);
     }
 
-    public abstract void updateStats(Origin origin);
+    public void removeStat(Attribute attribute)
+    {
+        attributeStats.removeIf((otherStat) -> otherStat.getAttribute().equals(attribute));
+    }
 
-    protected void updateStats(Origin origin, String statsKey)
+    public void updateStats(Origin origin)
     {
         clearStats(origin);
         Player player = origin.getPlayer();
@@ -129,24 +171,15 @@ public abstract class OriginRace
             return;
         }
 
-        PaperConfiguration config = HeavenRPG.getInstance().getConfiguration();
-        ConfigurationSection section = config.getSection("attributes." + name.toLowerCase() + "." +
-                statsKey);
-        if (section == null)
-        {
-            return;
-        }
-
-        for (String key : section.getKeys(false))
+        for (Origin.AttributeStat stat : attributeStats)
         {
             try
             {
-                AttributeModifier.Operation operation = AttributeModifier.Operation.valueOf(section.getString(key +
-                        ".operation"));
-                double amount = section.getDouble(key + ".amount");
+                Attribute attribute = stat.getAttribute();
+                double amount = stat.getAmount();
+                AttributeModifier.Operation operation = stat.getOperation();
                 NamespacedKey namespacedKey = new NamespacedKey(RACE_KEY, name.toLowerCase() + "." +
-                        key);
-                Attribute attribute = Registry.ATTRIBUTE.getOrThrow(Key.key("minecraft", key.toLowerCase()));
+                        attribute.getKey().value());
                 AttributeModifier modifier = new AttributeModifier(namespacedKey, amount, operation);
                 AttributeInstance attributeInstance = player.getAttribute(attribute);
                 if (attributeInstance != null)
@@ -187,6 +220,6 @@ public abstract class OriginRace
 
     public boolean isRaceSpell(Spell spell)
     {
-        return spells.containsValue(spell.getInternalName());
+        return spellNames.contains(spell.getInternalName());
     }
 }

@@ -1,3 +1,7 @@
+default:
+  race: "Human"
+  class: "Survivor"
+
 # The diets for each race. Each race can only eat what's listed.
 diet:
   human:

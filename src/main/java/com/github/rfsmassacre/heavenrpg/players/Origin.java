@@ -5,16 +5,19 @@ import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperConfiguration;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
 import com.github.rfsmassacre.heavenrpg.classes.OriginClass;
 import com.github.rfsmassacre.heavenrpg.data.OriginGson;
-import com.github.rfsmassacre.heavenrpg.races.Human;
 import com.github.rfsmassacre.heavenrpg.races.OriginRace;
 import com.github.rfsmassacre.heavenrpg.spells.Spell;
 import com.github.rfsmassacre.heavenrpg.utils.TaskUtil;
 import lombok.Getter;
 import lombok.Setter;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.KeybindComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Registry;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.Player;
 
 import java.time.Instant;
@@ -53,6 +56,56 @@ public final class Origin
             try
             {
                 return KeyBind.valueOf(name);
+            }
+            catch (IllegalArgumentException exception)
+            {
+                return null;
+            }
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class AttributeStat
+    {
+        private String attributeName;
+        private double amount;
+        private String operationName;
+
+        public AttributeStat()
+        {
+            this.amount = 0.0;
+        }
+
+        private AttributeStat(String attributeName, double amount, String operationName)
+        {
+            this.attributeName = attributeName;
+            this.amount = amount;
+            this.operationName = operationName;
+        }
+
+        public AttributeStat(Attribute attribute, double amount, AttributeModifier.Operation operation)
+        {
+            this(attribute.getKey().value(), amount, operation.name());
+        }
+
+        public Attribute getAttribute()
+        {
+            try
+            {
+                return Registry.ATTRIBUTE.getOrThrow(Key.key("minecraft", attributeName.toLowerCase()));
+            }
+            catch (Exception exception)
+            {
+                return null;
+            }
+        }
+
+        public AttributeModifier.Operation getOperation()
+        {
+            try
+            {
+                return AttributeModifier.Operation.valueOf(operationName);
             }
             catch (IllegalArgumentException exception)
             {
@@ -106,6 +159,14 @@ public final class Origin
         else
         {
             DATA.write(origin.playerId.toString(), origin);
+        }
+    }
+
+    public static void saveOrigins()
+    {
+        for (Origin origin : CACHE.values())
+        {
+            saveOrigin(origin, false);
         }
     }
 
@@ -166,7 +227,13 @@ public final class Origin
 
     public Origin()
     {
-        this.originRace = OriginRace.getRace(Human.class).getName(); //This is never null. <3
+        this(OriginRace.getDefaultRace(), OriginClass.getDefaultClass());
+    }
+
+    public Origin(OriginRace originRace, OriginClass originClass)
+    {
+        this.originRace = originRace.getName();
+        this.originClass = originClass.getName();
         this.lastHealth = 0.0;
         this.lastMaxHealth = 0.0;
         this.lastLogin = 0L;
@@ -178,6 +245,15 @@ public final class Origin
     public Origin(Player player)
     {
         this();
+
+        this.playerId = player.getUniqueId();
+        setDisplayName(player.getDisplayName());
+        this.name = player.getName();
+    }
+
+    public Origin(Player player, OriginRace originRace, OriginClass originClass)
+    {
+        this(originRace, originClass);
 
         this.playerId = player.getUniqueId();
         setDisplayName(player.getDisplayName());
@@ -243,6 +319,13 @@ public final class Origin
                 .toList();
     }
 
+    public boolean canEat(Material material)
+    {
+        PaperConfiguration config = HeavenRPG.getInstance().getConfiguration();
+        List<String> diet = config.getStringList("diet." + originRace.toLowerCase());
+        return diet.contains("ALL") || diet.contains(material.name());
+    }
+
     public boolean offlineFor(long hours)
     {
         if (getPlayer() != null)
@@ -257,18 +340,12 @@ public final class Origin
 
     public double getRaceLevel()
     {
-        OriginRace originRace = getOriginRace();
-        if (originRace == null)
-        {
-            return 0.0;
-        }
-
-        return getRaceLevel(originRace.getClass());
+        return getRaceLevel(originRace);
     }
 
-    public double getRaceLevel(Class<? extends OriginRace> raceClass)
+    public double getRaceLevel(String originRaceName)
     {
-        OriginRace originRace = OriginRace.getRace(raceClass);
+        OriginRace originRace = OriginRace.getRace(originRaceName);
         if (originRace == null)
         {
             return 0.0;
@@ -279,12 +356,12 @@ public final class Origin
 
     public void addRaceLevel(double level)
     {
-        addRaceLevel(level, getOriginRace().getClass());
+        addRaceLevel(level, originRace);
     }
 
-    public void addRaceLevel(double level, Class<? extends OriginRace> clazz)
+    public void addRaceLevel(double level, String originRaceName)
     {
-        OriginRace originRace = OriginRace.getRace(clazz);
+        OriginRace originRace = OriginRace.getRace(originRaceName);
         if (originRace != null)
         {
             raceLevels.put(originRace.getName(), this.getRaceLevel() + level);
@@ -293,18 +370,12 @@ public final class Origin
 
     public double getClassLevel()
     {
-        OriginClass originClass = getOriginClass();
-        if (originClass == null)
-        {
-            return 0.0;
-        }
-
-        return getClassLevel(getOriginClass().getClass());
+        return getClassLevel(originClass);
     }
 
-    public double getClassLevel(Class<? extends OriginClass> clazz)
+    public double getClassLevel(String name)
     {
-        OriginClass originClass = OriginClass.getClass(clazz);
+        OriginClass originClass = OriginClass.getClass(name);
         if (originClass == null)
         {
             return 0.0;
@@ -327,9 +398,8 @@ public final class Origin
         }
     }
 
-    public void setOriginRace(Class<? extends OriginRace> clazz)
+    public void setOriginRace(OriginRace originRace)
     {
-        OriginRace originRace = OriginRace.getRace(clazz);
         if (originRace != null)
         {
             this.originRace = originRace.getName();
@@ -341,9 +411,8 @@ public final class Origin
         return OriginRace.getRace(originRace);
     }
 
-    public void setOriginClass(Class<? extends OriginClass> clazz)
+    public void setOriginClass(OriginClass originClass)
     {
-        OriginClass originClass = OriginClass.getClass(clazz);
         if (originClass != null)
         {
             this.originClass = originClass.getName();
@@ -353,5 +422,20 @@ public final class Origin
     public OriginClass getOriginClass()
     {
         return OriginClass.getClass(originClass);
+    }
+
+    public void updateStats()
+    {
+        OriginRace originRace = getOriginRace();
+        if (originRace != null)
+        {
+            originRace.updateStats(this);
+        }
+
+        OriginClass originClass = getOriginClass();
+        if (originClass != null)
+        {
+            originClass.updateStats(this);
+        }
     }
 }

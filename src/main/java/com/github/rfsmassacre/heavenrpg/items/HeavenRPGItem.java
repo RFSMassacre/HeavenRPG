@@ -6,17 +6,20 @@ import com.github.rfsmassacre.heavenlibrary.paper.items.HeavenItem;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
 import org.bukkit.Material;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 
-public abstract class HeavenRPGItem extends HeavenItem
+public class HeavenRPGItem extends HeavenItem
 {
     private static final Map<String, HeavenRPGItem> CACHE = new HashMap<>();
-
+    private static PaperConfiguration config;
+    
     public static void initialize()
     {
         CACHE.clear();
-        registerItem(new PriestBook());
+        config = HeavenRPG.getInstance().getConfiguration(HeavenRPG.ConfigType.ITEMS);
+        registerItem(new HeavenRPGItem("PriestBook"));
     }
 
     public static void registerItem(HeavenRPGItem item)
@@ -52,14 +55,37 @@ public abstract class HeavenRPGItem extends HeavenItem
         return new HashSet<>(CACHE.values());
     }
 
-    public HeavenRPGItem(Material material, int amount, String name, String displayName, List<String> lore)
+    private static Material getMaterial(String materialName)
     {
-        super(HeavenRPG.getInstance(), material, amount, name, displayName, lore);
+        try
+        {
+            return Material.getMaterial(materialName);
+        }
+        catch (Exception exception)
+        {
+            return Material.STICK;
+        }
+    }
 
-        PaperConfiguration config = HeavenRPG.getInstance().getConfiguration(HeavenRPG.ConfigType.ITEMS);
-        setDisplayName(LocaleData.format(config.getString(name + ".display-name" + displayName)));
+    public HeavenRPGItem(String name)
+    {
+        super(HeavenRPG.getInstance(),
+                getMaterial(config.getString(name + ".material", "STICK").toUpperCase()),
+                config.getInt(name + ".amount", 1),
+                name,
+                LocaleData.format(config.getString(name + ".display-name", name)),
+                new ArrayList<>());
+
         setItemLore(config.getStringList(name + ".lore"));
         setCustomModelData(config.getInt(name + ".custom-model-data", 0));
+        setMaxSize(config.getInt(name + ".amount", 1));
+    }
+
+    public void setMaxSize(int size)
+    {
+        ItemMeta meta = item.getItemMeta();
+        meta.setMaxStackSize(size);
+        item.setItemMeta(meta);
     }
 
     @Override

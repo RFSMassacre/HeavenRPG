@@ -1,36 +1,44 @@
 package com.github.rfsmassacre.heavenrpg.classes;
 
+import com.github.rfsmassacre.heavenlibrary.interfaces.LocaleData;
 import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperConfiguration;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
-import com.github.rfsmassacre.heavenrpg.items.CastItem;
+import com.github.rfsmassacre.heavenrpg.data.ClassYaml;
 import com.github.rfsmassacre.heavenrpg.items.HeavenRPGItem;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
 import com.github.rfsmassacre.heavenrpg.spells.Spell;
 import lombok.Getter;
 import lombok.Setter;
-import net.kyori.adventure.key.Key;
-import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.*;
 
 @Getter
 @Setter
-public abstract class OriginClass
+public class OriginClass
 {
     private static final String CLASS_KEY = "heavenrpg_class";
-    public static final Map<String, OriginClass> CACHE = new HashMap<>();
+    private static final Map<String, OriginClass> CACHE = new HashMap<>();
+    private static ClassYaml DATA;
 
     public static void initialize()
     {
-        CACHE.clear();
-        registerClass(new Priest());
+        DATA = new ClassYaml();
+        loadClasses();
+        if (CACHE.isEmpty())
+        {
+            OriginClass priest = new OriginClass("Survivor", "&fSurvivor");
+            priest.addSpell("Prayer");
+            priest.addSpell("Curse");
+            priest.setCastItemName("PriestBook");
+            registerClass(priest);
+            saveClass(priest);
+        }
     }
 
     public static void registerClass(OriginClass originClass)
@@ -66,14 +74,44 @@ public abstract class OriginClass
         return new HashSet<>(CACHE.values());
     }
 
-    private final Map<Integer, String> spells;
-    private String name;
-    private String displayName;
-    private String castItem;
+    public static void loadClasses()
+    {
+        CACHE.clear();
+        for (OriginClass originClass : DATA.allDynamic("com.github.rfsmassacre.heavenrpg.classes."))
+        {
+            registerClass(originClass);
+        }
+    }
+
+    public static void saveClass(OriginClass originClass)
+    {
+        DATA.writeDynamic(originClass.name, originClass);
+    }
+
+    public static void saveClasses()
+    {
+        for (OriginClass originClass : CACHE.values())
+        {
+            saveClass(originClass);
+        }
+    }
+
+    public static OriginClass getDefaultClass()
+    {
+        PaperConfiguration config = HeavenRPG.getInstance().getConfiguration();
+        return getClass(config.getString("default.class", "Survivor"));
+    }
+
+    protected String name;
+    protected String displayName;
+    protected String castItemName;
+    protected List<String> spellNames;
+    protected List<Origin.AttributeStat> attributeStats;
 
     public OriginClass()
     {
-        this.spells = new HashMap<>();
+        this.spellNames = new ArrayList<>();
+        this.attributeStats = new ArrayList<>();
     }
 
     public OriginClass(String name)
@@ -81,76 +119,70 @@ public abstract class OriginClass
         this();
 
         this.name = name;
-        this.displayName = name;
+        setDisplayName(name);
     }
 
     public OriginClass(String name, String displayName)
     {
         this(name);
 
-        this.displayName = displayName;
+        setDisplayName(displayName);
     }
 
-    public OriginClass(String name, String displayName, Class<? extends CastItem> clazz)
+    public OriginClass(String name, String displayName, String castItemName, String... spellNames)
     {
         this(name, displayName);
 
-        //Make sure to register your cast item!
-        CastItem castItem = HeavenRPGItem.getItem(clazz);
-        if (castItem != null)
+        setCastItem(castItemName);
+        for (String spellName : spellNames)
         {
-            this.castItem = castItem.getName();
+            addSpell(spellName);
         }
     }
 
-    public <T extends Spell> T getSpell(Class<T> clazz)
+    public void setDisplayName(String displayName)
     {
-        try
-        {
-            return clazz.cast(getSpells().stream()
-                    .filter(clazz::isInstance)
-                    .findFirst()
-                    .orElse(null));
-        }
-        catch (ClassCastException exception)
-        {
-            return null;
-        }
+        this.displayName = LocaleData.undoFormat(displayName);
     }
 
-    public Spell getSpell(int level)
+    public String getFormatDisplay()
     {
-        return Spell.getSpell(spells.get(level));
+        return LocaleData.format(displayName);
     }
 
-    public void addSpell(int level, Class<? extends Spell> clazz)
+    public void addSpell(String spellName)
     {
-        Spell spell = Spell.getSpell(clazz);
-        if (spell != null)
+        Spell spell = Spell.getSpell(spellName);
+        if (spell != null && !spellNames.contains(spell.getInternalName()))
         {
-            spells.put(level, spell.getInternalName());
-        }
-        else
-        {
-            Bukkit.getLogger().severe(clazz.getSimpleName() + " is not a registered spell!");
+            spellNames.add(spell.getInternalName());
         }
     }
 
     public void removeSpell(Spell spell)
     {
-        spells.values().removeIf((name) -> spell.getInternalName().equals(name));
+        spellNames.removeIf((name) -> spell.getInternalName().equals(name));
     }
 
-    public List<? extends Spell> getSpells()
+    public List<? extends Spell> getSells()
     {
-        return spells.values().stream()
+        return spellNames.stream()
                 .map(Spell::getSpell)
                 .toList();
     }
 
-    public abstract void updateStats(Origin origin);
+    public void addStat(Origin.AttributeStat stat)
+    {
+        removeStat(stat.getAttribute());
+        attributeStats.add(stat);
+    }
 
-    protected void updateStats(Origin origin, String statsKey)
+    public void removeStat(Attribute attribute)
+    {
+        attributeStats.removeIf((otherStat) -> otherStat.getAttribute().equals(attribute));
+    }
+
+    public void updateStats(Origin origin)
     {
         clearStats(origin);
         Player player = origin.getPlayer();
@@ -159,24 +191,15 @@ public abstract class OriginClass
             return;
         }
 
-        PaperConfiguration config = HeavenRPG.getInstance().getConfiguration(HeavenRPG.ConfigType.CLASSES);
-        ConfigurationSection section = config.getSection("attributes." + name.toLowerCase() + "." +
-                statsKey);
-        if (section == null)
-        {
-            return;
-        }
-
-        for (String key : section.getKeys(false))
+        for (Origin.AttributeStat stat : attributeStats)
         {
             try
             {
-                AttributeModifier.Operation operation = AttributeModifier.Operation.valueOf(section.getString(key +
-                        ".operation"));
-                double amount = section.getDouble(key + ".amount") * origin.getRaceLevel();
+                Attribute attribute = stat.getAttribute();
+                double amount = stat.getAmount();
+                AttributeModifier.Operation operation = stat.getOperation();
                 NamespacedKey namespacedKey = new NamespacedKey(CLASS_KEY, name.toLowerCase() + "." +
-                        key);
-                Attribute attribute = Registry.ATTRIBUTE.getOrThrow(Key.key("minecraft", key.toLowerCase()));
+                        attribute.getKey().value());
                 AttributeModifier modifier = new AttributeModifier(namespacedKey, amount, operation);
                 AttributeInstance attributeInstance = player.getAttribute(attribute);
                 if (attributeInstance != null)
@@ -215,27 +238,22 @@ public abstract class OriginClass
         }
     }
 
-    public void setCastItem(Class<? extends CastItem> clazz)
+    public void setCastItem(String itemName)
     {
-        CastItem item = HeavenRPGItem.getItem(clazz);
+        HeavenRPGItem item = HeavenRPGItem.getItem(itemName);
         if (item != null)
         {
-            this.castItem = item.getName();
+            this.castItemName = item.getName();
         }
     }
 
-    public CastItem getCastItem()
+    public HeavenRPGItem getCastItem()
     {
-        if (HeavenRPGItem.getItem(castItem) instanceof CastItem item)
-        {
-            return item;
-        }
-
-        return null;
+        return HeavenRPGItem.getItem(castItemName);
     }
 
     public boolean isClassSpell(Spell spell)
     {
-        return spells.containsValue(spell.getInternalName());
+        return spellNames.contains(spell.getInternalName());
     }
 }

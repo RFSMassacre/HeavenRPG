@@ -22,9 +22,7 @@ public final class HeavenRPG extends HeavenPaperPlugin
     @Getter
     public enum ConfigType
     {
-        ITEMS("items.yml"),
-        CLASSES("classes.yml"),
-        SPELLS("spells.yml");
+        ITEMS("items.yml");
 
         private final String fileName;
 
@@ -44,8 +42,6 @@ public final class HeavenRPG extends HeavenPaperPlugin
         getDataFolder().mkdir();
         addYamlManager(new PaperConfiguration(this, "", "config.yml", true));
         addYamlManager(new PaperLocale(this, "", "locale.yml", true));
-        addYamlManager(new PaperConfiguration(this, "", "spells.yml"));
-        addYamlManager(new PaperConfiguration(this, "", "classes.yml"));
         addYamlManager(new PaperConfiguration(this, "", "items.yml"));
         HeavenRPGItem.initialize();
         Spell.initialize();
@@ -63,7 +59,9 @@ public final class HeavenRPG extends HeavenPaperPlugin
     @Override
     public void onDisable()
     {
-        //Do nothing.
+        OriginRace.saveRaces();
+        OriginClass.saveClasses();
+        Origin.saveOrigins();
     }
 
     public PaperConfiguration getConfiguration(ConfigType type)

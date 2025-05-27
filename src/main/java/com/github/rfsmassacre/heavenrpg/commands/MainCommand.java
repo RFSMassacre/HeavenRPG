@@ -44,9 +44,8 @@ public class MainCommand extends PaperCommand
 
             HeavenRPGItem.initialize();
             Spell.initialize();
-            OriginRace.initialize();
-            OriginClass.initialize();
-            Origin.initialize();
+            OriginRace.loadRaces();
+            OriginClass.loadClasses();
             TaskUtil.reload();
             locale.sendLocale(sender, "admin.reloaded");
             playSound(sender, SoundKey.SUCCESS);
@@ -119,27 +118,27 @@ public class MainCommand extends PaperCommand
                     Integer.toString(itemStack.getAmount()), "{item}", item.getDisplayName());
             playSound(player, SoundKey.SUCCESS);
         }
-    }
 
-    @Override
-    public List<String> onTabComplete(CommandSender sender, String... args)
-    {
-        List<String> suggestions = new ArrayList<>();
-        if (args.length == 2)
+        @Override
+        public List<String> onTabComplete(CommandSender sender, String... args)
         {
-            suggestions.addAll(HeavenRPGItem.getItems().stream()
-                    .map(HeavenRPGItem::getName)
-                    .toList());
-        }
-        else if (args.length == 3)
-        {
-            suggestions.addAll(Bukkit.getOnlinePlayers().stream()
-                    .filter((online) -> !sender.equals(online))
-                    .map(Player::getName)
-                    .toList());
-        }
+            List<String> suggestions = new ArrayList<>();
+            if (args.length == 2)
+            {
+                suggestions.addAll(HeavenRPGItem.getItems().stream()
+                        .map(HeavenRPGItem::getName)
+                        .toList());
+            }
+            else if (args.length == 3)
+            {
+                suggestions.addAll(Bukkit.getOnlinePlayers().stream()
+                        .filter((online) -> !sender.equals(online))
+                        .map(Player::getName)
+                        .toList());
+            }
 
-        return suggestions;
+            return suggestions;
+        }
     }
 
     private class RaceCommand extends PaperSubCommand
@@ -182,7 +181,7 @@ public class MainCommand extends PaperCommand
                     return;
                 }
 
-                change(sender, origin, originRace.getClass());
+                change(sender, origin, raceName);
             }
             else
             {
@@ -206,14 +205,14 @@ public class MainCommand extends PaperCommand
                         return;
                     }
 
-                    change(sender, origin, originRace.getClass());
+                    change(sender, origin, raceName);
                 });
             }
         }
 
-        private void change(CommandSender sender, Origin origin, Class<? extends OriginRace> clazz)
+        private void change(CommandSender sender, Origin origin, String originRaceName)
         {
-            if (clazz == null || OriginRace.getRace(clazz) == null)
+            if (originRaceName == null || OriginRace.getRace(originRaceName) == null)
             {
                 locale.sendLocale(sender, true, "admin.race.failed");
                 return;
@@ -225,7 +224,7 @@ public class MainCommand extends PaperCommand
                 {
                     TaskUtil.runTask(() ->
                     {
-                        RaceChangeEvent event = new RaceChangeEvent(origin, clazz);
+                        RaceChangeEvent event = new RaceChangeEvent(origin, originRaceName);
                         if (!event.callEvent())
                         {
                             locale.sendLocale(sender, "admin.race.failed");
@@ -233,13 +232,13 @@ public class MainCommand extends PaperCommand
                             return;
                         }
 
-                        origin.setOriginRace(clazz);
+                        origin.setOriginRace(event.getOriginRace());
                         locale.sendLocale(origin.getPlayer(), "admin.race.success.target", "{race}",
-                                origin.getOriginRace().getDisplayName());
+                                origin.getOriginRace().getFormatDisplay());
                         if (!sender.equals(origin.getPlayer()))
                         {
                             locale.sendLocale(sender, "admin.race.success.sender", "{player}",
-                                    origin.getDisplayName(), "{race}", origin.getOriginRace().getDisplayName());
+                                    origin.getDisplayName(), "{race}", origin.getOriginRace().getFormatDisplay());
                         }
 
                         playSound(sender, SoundKey.SUCCESS);
@@ -313,7 +312,7 @@ public class MainCommand extends PaperCommand
                     return;
                 }
 
-                change(sender, origin, originClass.getClass());
+                change(sender, origin, className);
             }
             else
             {
@@ -337,14 +336,14 @@ public class MainCommand extends PaperCommand
                         return;
                     }
 
-                    change(sender, origin, originClass.getClass());
+                    change(sender, origin, className);
                 });
             }
         }
 
-        private void change(CommandSender sender, Origin origin, Class<? extends OriginClass> clazz)
+        private void change(CommandSender sender, Origin origin, String originClassName)
         {
-            if (clazz == null || OriginClass.getClass(clazz) == null)
+            if (originClassName == null || OriginClass.getClass(originClassName) == null)
             {
                 locale.sendLocale(sender, true, "admin.class.failed");
                 return;
@@ -356,23 +355,23 @@ public class MainCommand extends PaperCommand
                 {
                     TaskUtil.runTask(() ->
                     {
-                        ClassChangeEvent event = new ClassChangeEvent(origin, clazz);
+                        ClassChangeEvent event = new ClassChangeEvent(origin, originClassName);
                         if (!event.callEvent())
                         {
                             locale.sendLocale(sender, "admin.class.failed", "{player}",
-                                    origin.getDisplayName(), "{class}", event.getOriginClass().getDisplayName());
+                                    origin.getDisplayName(), "{class}", event.getOriginClass().getFormatDisplay());
                             playSound(sender, SoundKey.INCOMPLETE);
                             return;
                         }
 
-                        origin.setOriginClass(clazz);
+                        origin.setOriginClass(event.getOriginClass());
                         locale.sendLocale(origin.getPlayer(), true, "admin.class.success.target",
-                                "{class}", origin.getOriginClass().getDisplayName());
+                                "{class}", origin.getOriginClass().getFormatDisplay());
                         if (!sender.equals(origin.getPlayer()))
                         {
                             locale.sendLocale(sender, true, "admin.class.success.sender",
                                     "{player}", origin.getDisplayName(), "{class}",
-                                    origin.getOriginClass().getDisplayName());
+                                    origin.getOriginClass().getFormatDisplay());
                         }
 
                         playSound(sender, SoundKey.SUCCESS);

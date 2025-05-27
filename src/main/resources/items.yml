@@ -1,5 +1,6 @@
 PriestBook:
+  material: BOOK
+  amount: 1
   display-name: "&eHoly Book"
-  lore:
-    - "&fTest"
+  lore: []
   custom-model-data: 0

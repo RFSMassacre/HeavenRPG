@@ -1,66 +1,64 @@
 package com.github.rfsmassacre.heavenrpg.spells;
 
 import com.github.rfsmassacre.heavenlibrary.interfaces.LocaleData;
-import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperConfiguration;
 import com.github.rfsmassacre.heavenlibrary.paper.configs.PaperLocale;
 import com.github.rfsmassacre.heavenrpg.HeavenRPG;
+import com.github.rfsmassacre.heavenrpg.data.SpellYaml;
 import com.github.rfsmassacre.heavenrpg.events.SpellCastEvent;
 import com.github.rfsmassacre.heavenrpg.events.SpellCooldownEvent;
 import com.github.rfsmassacre.heavenrpg.events.SpellTargetEvent;
 import com.github.rfsmassacre.heavenrpg.players.Origin;
 import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionEffectTypeCategory;
 import org.bukkit.util.RayTraceResult;
 
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Getter
 public abstract class Spell implements Listener
 {
     private static final Map<String, Spell> SPELLS = new HashMap<>();
+    private static SpellYaml DATA;
 
     public static void initialize()
     {
-        for (Spell spell : SPELLS.values())
+        DATA = new SpellYaml();
+        loadSpells();
+        if (SPELLS.isEmpty())
         {
-            if (spell instanceof BuffSpell buff)
-            {
-                buff.deactivateTimers();
-            }
-
-            HandlerList.unregisterAll(spell);
+            PotionSpell prayer = new PotionSpell("Prayer", "&ePrayer",
+                    PotionEffectTypeCategory.BENEFICIAL);
+            prayer.setTargetSelf(true);
+            prayer.setBeneficial(true);
+            PotionSpell curse = new PotionSpell("Curse", "&cCurse",
+                    PotionEffectTypeCategory.HARMFUL);
+            PotionSpell defense = new PotionSpell("Defense", "&aDefense",
+                    PotionEffectType.RESISTANCE);
+            defense.setPotionReceived(null);
+            defense.setPotionSent(null);
+            defense.setTargetSelf(true);
+            defense.setBeneficial(true);
+            defense.setBindable(false);
+            PassiveSpell orcPassive = new PassiveSpell("OrcDefense", "&aOrc Defense");
+            orcPassive.addInnerSpell(defense);
+            orcPassive.setTargetSelf(true);
+            orcPassive.setBeneficial(true);
+            orcPassive.setBindable(false);
+            addSpell(prayer);
+            addSpell(curse);
+            addSpell(defense);
+            addSpell(orcPassive);
+            saveSpells();
         }
-
-        SPELLS.clear();
-        addSpell(new PrayerSpell());
-        /*
-        Reflections reflections = new Reflections("com.github.rfsmassacre.heavenrpg.spells", Scanners.SubTypes);
-        Set<Class<? extends Spell>> spellClasses = reflections.getSubTypesOf(Spell.class);
-        for (Class<? extends Spell> spellClass : spellClasses)
-        {
-            if (!Modifier.isAbstract(spellClass.getModifiers()))
-            {
-                try
-                {
-                    Spell spell = spellClass.getDeclaredConstructor().newInstance();
-                    addSpell(spell);
-                }
-                catch (Exception ignored)
-                {
-                    //Do nothing
-                }
-            }
-        }
-         */
     }
 
     public static <T extends Spell> T getSpell(Class<T> clazz)
@@ -100,81 +98,109 @@ public abstract class Spell implements Listener
         Bukkit.getPluginManager().registerEvents(spell, HeavenRPG.getInstance());
     }
 
-    private final PaperConfiguration config;
-    protected final PaperLocale locale;
-    private final Set<BukkitTask> tasks;
+    public static void loadSpells()
+    {
+        for (Spell spell : SPELLS.values())
+        {
+            switch (spell)
+            {
+                case BuffSpell buffSpell -> buffSpell.deactivateTimers();
+                case PassiveSpell passiveSpell -> passiveSpell.deactivateTimers();
+                default ->
+                {
+                    //Do nothing.
+                }
+            }
+
+            HandlerList.unregisterAll(spell);
+        }
+
+        SPELLS.clear();
+        for (Spell spell : DATA.allDynamic("com.github.rfsmassacre.heavenrpg.spells."))
+        {
+            addSpell(spell);
+        }
+    }
+
+    public static <T extends Spell> void saveSpell(T spell)
+    {
+        DATA.writeDynamic(spell.internalName, spell);
+    }
+
+    public static void saveSpells()
+    {
+        for (Spell spell : SPELLS.values())
+        {
+            saveSpell(spell);
+        }
+    }
+
+    private final PaperLocale locale;
     protected final Map<UUID, Long> cooldowns;
+    @Getter
+    @Setter
+    protected String internalName;
+    protected String displayName;
+    @Getter
+    @Setter
+    protected long cooldown;
+    @Getter
+    @Setter
+    protected int level, customModelId;
+    @Getter
+    @Setter
+    protected boolean beneficial, bindable, targetSelf;
+    @Getter
+    @Setter
+    protected double range, dot;
+    @Getter
+    @Setter
+    protected String cooldownMessage, itemMessage, levelMessage, noTargetMessage;
 
-    @Getter
-    protected final String internalName;
-    @Getter
-    protected final String displayName;
-    @Getter
-    protected final long cooldown;
-    @Getter
-    protected final int level, customModelId;
-    @Getter
-    protected final boolean beneficial, bindable;
-    @Getter
-    protected final double range, dot;
-    @Getter
-    protected String cooldownMessage, itemMessage, levelMessage, raceMessage, noTargetMessage;
+    protected List<String> description;
 
-    protected final List<String> description;
+    public Spell()
+    {
+        this.locale = HeavenRPG.getInstance().getLocale();
+        this.cooldowns = new HashMap<>();
+    }
 
     public Spell(String internalName)
     {
-        this.config = HeavenRPG.getInstance().getConfiguration(HeavenRPG.ConfigType.SPELLS);
-        this.locale = HeavenRPG.getInstance().getLocale();
-        this.tasks = new HashSet<>();
-        this.cooldowns = new HashMap<>();
+        this();
+
         this.internalName = internalName;
-        this.displayName = getString("display-name", internalName);
-        this.cooldown = getInt("cooldown", 0);
-        this.level = getInt("level", 0);
-        this.beneficial = getBoolean("beneficial", false);
-        this.bindable = getBoolean("bindable", true);
-        this.customModelId = getInt("custom-model-data", 0);
-        this.description = getStringList("description");
-        this.cooldownMessage = getString("cooldown-message", displayName +
-                "&r &cis on cooldown! &4(&e{time}&4)");
-        this.range = getDouble("range", 0.0);
-        this.dot = getDouble("dot", 0.2);
-        this.itemMessage = getString("no-item-message", displayName + "&r &cis missing an item!");
-        this.levelMessage = getString("level-message", displayName + "&r &crequires you to be &eLVL "
-                + level + "&c!");
-        this.noTargetMessage = getString("no-target-message", displayName + "&r &crequires a target!");
+        this.displayName = internalName;
+        this.cooldown = 0;
+        this.level = 0;
+        this.beneficial = false;
+        this.bindable = true;
+        this.targetSelf = false;
+        this.customModelId = 0;
+        this.description = new ArrayList<>();
+        this.cooldownMessage =  "&f{spell}&r &cis on cooldown! &4(&e{time}&4)";
+        this.range = 0.0;
+        this.dot = 0.2;
+        this.itemMessage = "&f{spell}&r &cis missing an item!";
+        this.levelMessage = "&f{spell}&r &crequires you to be &eLVL {level}&c!";
+        this.noTargetMessage = "&f{spell}&r &crequires a target!";
     }
 
-    private String replaceValues(String input)
+    public Spell(String internalName, String displayName)
     {
-        // Regular expression pattern for placeholder format {key}
-        Pattern pattern = Pattern.compile("\\{([^}]+)}");
-        Matcher matcher = pattern.matcher(input);
-        StringBuilder result = new StringBuilder();
-        while (matcher.find())
-        {
-            String key = matcher.group(1);
-            if (key.equals("cooldown"))
-            {
-                matcher.appendReplacement(result, Integer.toString(config.getSection(internalName).getInt(key)
-                        / 1000));
-                continue;
-            }
-            else if (key.equals("duration") || key.equals("delay") || key.equals("animation"))
-            {
-                matcher.appendReplacement(result, String.format("%.1f", (double) config.getSection(internalName)
-                        .getInt(key) / 20.0));
-                continue;
-            }
+        this(internalName);
 
-            Object value = config.getSection(internalName).get(key);
-            String replacement = (value != null) ? value.toString() : matcher.group(0);
-            matcher.appendReplacement(result, replacement);
-        }
+        setDisplayName(displayName);
+    }
 
-        matcher.appendTail(result);
-        return result.toString();
+    public void setDisplayName(String displayName)
+    {
+        this.displayName = LocaleData.undoFormat(displayName);
+    }
+
+    public String getDisplayName()
+    {
+        return LocaleData.format(displayName);
     }
 
     public List<String> getDescription()
@@ -203,14 +229,14 @@ public abstract class Spell implements Listener
             return false;
         }
 
-        if (!origin.getOriginRace().isRaceSpell(this) && !origin.getOriginClass().isClassSpell(this))
+        if (!origin.getOriginRace().isRaceSpell(this) & !origin.getOriginClass().isClassSpell(this))
         {
             return false;
         }
 
         if (origin.getRaceLevel() < level)
         {
-            locale.sendActionMessage(origin.getPlayer(), levelMessage);
+            sendActionMessage(entity, levelMessage, "{spell}", getDisplayName());
             return false;
         }
 
@@ -227,7 +253,7 @@ public abstract class Spell implements Listener
         long cooldown = cooldowns.getOrDefault(entity.getUniqueId(), 0L);
         if (System.currentTimeMillis() - cooldown < this.cooldown)
         {
-            sendActionMessage(entity, cooldownMessage, "{time}",
+            sendActionMessage(entity, cooldownMessage, "{spell}", getDisplayName(), "{time}",
                     LocaleData.formatTime((double) getCooldown(entity) / 1000));
             return false;
         }
@@ -271,51 +297,6 @@ public abstract class Spell implements Listener
         }
 
         return (LivingEntity) result.getHitEntity();
-    }
-
-    protected String getString(String key, String defaultValue)
-    {
-        return config.getString(internalName + "." + key, defaultValue);
-    }
-
-    protected int getInt(String key, int defaultValue)
-    {
-        return config.getInt(internalName + "." + key, defaultValue);
-    }
-
-    protected double getDouble(String key, double defaultValue)
-    {
-        return config.getDouble(internalName + "." + key, defaultValue);
-    }
-
-    protected long getLong(String key, long defaultValue)
-    {
-        return config.getLong(internalName + "." + key, defaultValue);
-    }
-
-    protected boolean getBoolean(String key, boolean defaultValue)
-    {
-        return config.getBoolean(internalName + "." + key, defaultValue);
-    }
-
-    protected List<String> getStringList(String key)
-    {
-        return config.getStringList(internalName + "." + key);
-    }
-
-    protected List<Integer> getIntegerList(String key)
-    {
-        return config.getIntegerList(internalName + "." + key);
-    }
-
-    protected List<Double> getDoubleList(String key)
-    {
-        return config.getDoubleList(internalName + "." + key);
-    }
-
-    protected List<Long> getLongList(String key)
-    {
-        return config.getLongList(internalName + "." + key);
     }
 
     protected void sendActionMessage(LivingEntity entity, String message, String... holders)
