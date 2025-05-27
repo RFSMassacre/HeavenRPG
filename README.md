@@ -13,7 +13,7 @@ _This plugin allows server owners and plugin developers to make their own races 
 - `/heavenrpg class <class> [class]` Change you (or another player) into a specific class.
 
 ## Configuration
-When configuring, any files in an inner folder like `races`, `classes`, and `spells` use an a tag on the first line to let it know what kind of class it's loading. This to automate the process of making these things.
+When configuring, any files in an inner folder like `races`, `classes`, and `spells` use a tag on the first line to let it know what kind of class it's loading. This to automate the process of making these things.
 
 The main changes to `spells` files is that you have to know what base class name you're pulling from. So if it's a PotionSpell or a PassiveSpell, you have to specify that in the first line for it to load correctly.
 
