@@ -11,6 +11,8 @@ import com.github.rfsmassacre.heavenrpg.players.Origin;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Bukkit;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -288,6 +290,15 @@ public abstract class Spell implements Listener
 
             return false;
         };
+
+        if (range == 0.0)
+        {
+            AttributeInstance reach = entity.getAttribute(Attribute.ENTITY_INTERACTION_RANGE);
+            if (reach != null)
+            {
+                range = reach.getValue();
+            }
+        }
 
         RayTraceResult result = entity.getWorld().rayTraceEntities(entity.getEyeLocation(),
                 entity.getEyeLocation().getDirection(), range, dot, filter);

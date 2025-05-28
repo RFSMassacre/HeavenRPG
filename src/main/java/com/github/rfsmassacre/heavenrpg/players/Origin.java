@@ -321,8 +321,13 @@ public final class Origin
 
     public boolean canEat(Material material)
     {
-        PaperConfiguration config = HeavenRPG.getInstance().getConfiguration();
-        List<String> diet = config.getStringList("diet." + originRace.toLowerCase());
+        OriginRace originRace = getOriginRace();
+        if (originRace == null)
+        {
+            return false;
+        }
+
+        List<String> diet = originRace.getFoodNames();
         return diet.contains("ALL") || diet.contains(material.name());
     }
 
@@ -386,12 +391,12 @@ public final class Origin
 
     public void addClassLevel(double level)
     {
-        addClassLevel(level, getOriginClass().getClass());
+        addClassLevel(level, originClass);
     }
 
-    public void addClassLevel(double level, Class<? extends OriginClass> clazz)
+    public void addClassLevel(double level, String originClassName)
     {
-        OriginClass originClass = OriginClass.getClass(clazz);
+        OriginClass originClass = OriginClass.getClass(originClassName);
         if (originClass != null)
         {
             raceLevels.put(originClass.getName(), this.getRaceLevel() + level);

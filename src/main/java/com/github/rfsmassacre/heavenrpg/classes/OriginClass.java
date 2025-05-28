@@ -32,12 +32,12 @@ public class OriginClass
         loadClasses();
         if (CACHE.isEmpty())
         {
-            OriginClass priest = new OriginClass("Survivor", "&fSurvivor");
-            priest.addSpell("Prayer");
-            priest.addSpell("Curse");
-            priest.setCastItemName("PriestBook");
-            registerClass(priest);
-            saveClass(priest);
+            OriginClass survivor = new OriginClass("Survivor", "&fSurvivor",
+                    "PriestBook");
+            survivor.addSpell("Prayer");
+            survivor.addSpell("Curse");
+            registerClass(survivor);
+            saveClass(survivor);
         }
     }
 
@@ -161,7 +161,7 @@ public class OriginClass
 
     public void removeSpell(Spell spell)
     {
-        spellNames.removeIf((name) -> spell.getInternalName().equals(name));
+        spellNames.remove(spell.getInternalName());
     }
 
     public List<? extends Spell> getSells()

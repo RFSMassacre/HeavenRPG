@@ -51,14 +51,14 @@ public class KeybindCommand extends SimplePaperCommand
         Origin.KeyBind keyBind = Origin.KeyBind.fromString(keyName.toUpperCase());
         if (keyBind == null)
         {
-            locale.sendLocale(player, true, "spells.no-keybind", "{keybind}", keyName);
+            locale.sendLocale(player, "spells.no-keybind", "{keybind}", keyName);
             return;
         }
 
         if (spellName.equalsIgnoreCase(NONE_SPELL))
         {
             origin.getSpells().remove(keyBind);
-            locale.sendLocale(player, true, "spells.removed-keybind", "{keybind}",
+            locale.sendLocale(player, "spells.removed-keybind", "{keybind}",
                     keyBind.toString());
             Origin.saveOrigin(origin, true);
             return;
@@ -67,7 +67,7 @@ public class KeybindCommand extends SimplePaperCommand
         Spell spell = Spell.getSpell(spellName);
         if (spell == null || !spell.isBindable())
         {
-            locale.sendLocale(player, true, "invalid.spell", "{spell}", spellName);
+            locale.sendLocale(player, "invalid.spell", "{spell}", spellName);
             return;
         }
 
@@ -90,17 +90,17 @@ public class KeybindCommand extends SimplePaperCommand
 
         if (originClass.isClassSpell(spell) && origin.getClassLevel() < spell.getLevel())
         {
-            locale.sendLocale(player, "spell.low-level.class", "{spell}", spell.getDisplayName(), "{class}",
-                    originClass.getFormatDisplay(), "{requirement}", Integer.toString(spell.getLevel()), "{level}",
-                    Integer.toString((int) origin.getClassLevel()));
+            locale.sendLocale(player, "spell.low-level.class", "{spell}", spell.getDisplayName(),
+                    "{class}", originClass.getFormatDisplay(), "{requirement}", Integer.toString(spell.getLevel()),
+                    "{level}", Integer.toString((int) origin.getClassLevel()));
             playSound(player, SoundKey.INCOMPLETE);
             return;
         }
 
         origin.getSpells().put(keyBind, spellName);
         Origin.saveOrigin(origin, true);
-        locale.sendLocale(player, true, "spells.keybind", "{keybind}", keyBind.toString(),
-                "{spell}", spell.getDisplayName());
+        locale.sendLocale(player, "spells.keybind", "{keybind}", keyBind.toString(), "{spell}",
+                spell.getDisplayName());
     }
 
     @Override

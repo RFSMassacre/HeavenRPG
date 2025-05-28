@@ -8,6 +8,7 @@ import com.github.rfsmassacre.heavenrpg.players.Origin;
 import com.github.rfsmassacre.heavenrpg.spells.Spell;
 import lombok.Getter;
 import lombok.Setter;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
@@ -32,15 +33,13 @@ public class OriginRace
         if (CACHE.isEmpty())
         {
             OriginRace human = new OriginRace("Human", "&fHuman");
-            OriginRace orc = new OriginRace("Orc", "&6Orc");
+            OriginRace orc = new OriginRace("Orc", "&6Orc", "Defense", "OrcDefense");
             orc.addStat(new Origin.AttributeStat(Attribute.SCALE, 0.5,
                     AttributeModifier.Operation.ADD_SCALAR));
             orc.addStat(new Origin.AttributeStat(Attribute.ENTITY_INTERACTION_RANGE, 0.5,
                     AttributeModifier.Operation.ADD_SCALAR));
             orc.addStat(new Origin.AttributeStat(Attribute.BLOCK_INTERACTION_RANGE, 0.5,
                     AttributeModifier.Operation.ADD_SCALAR));
-            orc.addSpell("Defense");
-            orc.addSpell("OrcDefense");
             registerRace(human);
             registerRace(orc);
             saveRaces();
@@ -97,6 +96,7 @@ public class OriginRace
 
     protected List<String> spellNames;
     protected List<Origin.AttributeStat> attributeStats;
+    protected List<String> foodNames;
     protected String name;
     protected String displayName;
 
@@ -104,6 +104,7 @@ public class OriginRace
     {
         this.spellNames = new ArrayList<>();
         this.attributeStats = new ArrayList<>();
+        this.foodNames = new ArrayList<>();
     }
 
     public OriginRace(String name)
@@ -121,7 +122,6 @@ public class OriginRace
         setDisplayName(displayName);
     }
 
-    @SafeVarargs
     public OriginRace(String name, String displayName, String... spellNames)
     {
         this(name, displayName);
@@ -160,6 +160,26 @@ public class OriginRace
     public void removeStat(Attribute attribute)
     {
         attributeStats.removeIf((otherStat) -> otherStat.getAttribute().equals(attribute));
+    }
+
+    public void addFood(Material food)
+    {
+        if (!foodNames.contains(food.name()))
+        {
+            foodNames.add(food.name());
+        }
+    }
+
+    public void removeFood(Material food)
+    {
+        foodNames.remove(food.name());
+    }
+
+    public List<Material> getFoods()
+    {
+        return new ArrayList<>(foodNames.stream()
+                .map(Material::getMaterial)
+                .toList());
     }
 
     public void updateStats(Origin origin)
